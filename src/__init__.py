@@ -12,3 +12,5 @@
 """
 DESCRIPTION = """
 """
+import indexer
+import distance

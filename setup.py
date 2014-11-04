@@ -23,12 +23,12 @@ except ImportError:
 
 
 setup(name='hdidx',
-      version='0.0.0',
+      version='0.0.3',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'src'},
       packages=['hdidx'],
-      scripts=[],
+      scripts=['tests/test_indexer.py'],
       url='https://github.com/wanji/hdidx',
       # license='LICENSE.txt',
       description='ANN Search in High-Dimensional Spaces',
@@ -38,5 +38,6 @@ setup(name='hdidx',
           "numpy      >= 1.6.0",
           "scipy      >= 0.9.0",
           "bottleneck >= 0.8.0",
+          "lmdb       >= 0.83",
       ],
       )

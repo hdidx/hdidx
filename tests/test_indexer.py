@@ -20,8 +20,8 @@ import logging
 
 import numpy as np
 
-from distance import distFunc
-import indexer
+from hdidx.distance import distFunc
+from hdidx import indexer
 
 
 def load_random(ntrain, nbase, nquery, d=16):
@@ -35,17 +35,17 @@ def load_random(ntrain, nbase, nquery, d=16):
 
     t0 = time.clock()
     ids_gnd = np.empty(nquery)
-    logging.info("Computing the ground-truth...\n")
+    logging.info("Computing the ground-truth...")
     batsize = 20
     for q in range(0, nquery, batsize):
         logging.info("\r\t%d/%d" % (q, nquery))
         last = min(q+batsize, nquery)
         dist = distFunc['euclidean'](vbase, vquery[q:last])
         ids_gnd[q:last] = dist.argmin(1)
-    logging.info("\r\t%d/%d\tDone!\n" % (nquery, nquery))
+    logging.info("\r\t%d/%d\tDone!" % (nquery, nquery))
     # dis_gnd = [dist[i, ids_gnd[i]] for i in range(dist.shape[0])]
     tgnd = time.clock() - t0
-    logging.info("GND Time: %.3fs\n" % tgnd)
+    logging.info("GND Time: %.3fs" % tgnd)
     return vtrain, vbase, vquery, ids_gnd
 
 
@@ -87,13 +87,21 @@ def compute_stats(nquery, ids_gnd, ids_pqc, k):
 
 class TestPQNew(unittest.TestCase):
     def setUp(self):
-        self.vtrain, self.vbase, self.vquery, self.ids_gnd = \
-            create_random_data()
+        pass
 
     def tearDown(self):
         pass
 
-    def test_pq(self):
+    @classmethod
+    def setUpClass(cls):
+        cls.vtrain, cls.vbase, cls.vquery, cls.ids_gnd = \
+            create_random_data()
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def test_pq_mem(self):
         nsubq = 8
         topk = 100
 
@@ -102,9 +110,48 @@ class TestPQNew(unittest.TestCase):
             'vals': self.vtrain,
             'nsubq': nsubq,
         })
+        idx.save('mem.info')
+        idx.set_storage('mem')
 
         idx.add(self.vbase)
         ids, dis = idx.search(self.vquery, topk=topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+
+    def test_pq_lmdb(self):
+        nsubq = 8
+        topk = 100
+
+        idx = indexer.PQIndexer()
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': nsubq,
+        })
+        idx.save('lmdb.info')
+        idx.set_storage('lmdb', {
+            'path': 'lmdb.idx',
+            'clear': True,
+        })
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+
+        idx1 = indexer.PQIndexer()
+        idx1.load('lmdb.info')
+        idx1.set_storage('lmdb', {
+            'path': 'lmdb.idx',
+            'clear': True,
+        })
+        idx1.add(self.vbase)
+        ids, dis = idx1.search(self.vquery, topk=topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+
+        idx2 = indexer.PQIndexer()
+        idx2.load('lmdb.info')
+        idx2.set_storage('lmdb', {
+            'path': 'lmdb.idx',
+            'clear': False,
+        })
+        ids, dis = idx2.search(self.vquery, topk=topk)
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
 
 
