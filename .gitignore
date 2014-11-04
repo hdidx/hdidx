@@ -1,0 +1,6 @@
+*.pyc
+*.swp
+*.log
+.ropeproject/
+dist/
+hdidx.egg-info/
