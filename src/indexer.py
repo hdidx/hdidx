@@ -98,7 +98,7 @@ class PQIndexer(Indexer):
         nsubqbits = pardic.get('nsubqbits', 8)
         # the number of items in one block
 
-        # blksize = pardic.get('blksize', 16384)
+        blksize = pardic.get('blksize', 16384)
 
         # vector dimension
         dim = vals.shape[1]
@@ -120,6 +120,7 @@ class PQIndexer(Indexer):
         idxdat['nsubq'] = nsubq
         idxdat['ksub'] = ksub
         idxdat['dsub'] = dsub
+        idxdat['blksize'] = blksize
         idxdat['centroids'] = [None for q in range(nsubq)]
 
         logging.info("Building codebooks in subspaces - BEGIN")
@@ -141,29 +142,24 @@ class PQIndexer(Indexer):
         nsubq = self.idxdat['nsubq']
         centroids = self.idxdat['centroids']
 
-        codes = np.zeros((num_vals, nsubq), np.uint8)
-        for q in range(nsubq):
-            vsub = vals[:, q*dsub:(q+1)*dsub]
-            codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
-        self.storage.add(codes, keys)
+        blksize = self.idxdat.get('blksize', 16384)
+        start_id = 0
+        for start_id in range(0, num_vals, blksize):
+            cur_num = min(blksize, num_vals - start_id)
+            print "%8d/%d: %d" % (start_id, num_vals, cur_num)
 
-#         start_id = 0
-#         while start_id < num_vals:
-#             if self.num_emptys is 0:
-#                 self.blocks.append(np.zeros((blksize, nsubq), np.uint8))
-#                 self.num_emptys = blksize
-#             cur_num = min(self.num_emptys, num_vals-start_id)
-#             cur_start = blksize - self.num_emptys
-#
-#             for q in range(nsubq):
-#                 vsub = vals[start_id:start_id+cur_num, q*dsub:(q+1)*dsub]
-#                 # ipdb.set_trace()
-#                 self.blocks[-1][cur_start:cur_start+cur_num, q] = \
-#                     pq_kmeans_assign(centroids[q], vsub)
-#
-#             self.num_emptys -= cur_num
-#             start_id += cur_num
-        # ipdb.set_trace()
+            codes = np.zeros((cur_num, nsubq), np.uint8)
+            for q in range(nsubq):
+                vsub = vals[start_id:start_id+cur_num, q*dsub:(q+1)*dsub]
+                codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
+            # self.storage.add(codes, keys[start_id:start_id+cur_num])
+            self.storage.add(codes, None)
+
+        # codes = np.zeros((num_vals, nsubq), np.uint8)
+        # for q in range(nsubq):
+        #     vsub = vals[:, q*dsub:(q+1)*dsub]
+        #     codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
+        # self.storage.add(codes, keys)
 
     def remove(self, keys):
         raise Exception(self.INST_ERR)
@@ -210,6 +206,7 @@ class PQIndexer(Indexer):
 
         for keys, blk in self.storage:
             cur_num = blk.shape[0]
+            # dis[start_id:start_id+cur_num] = 0
             dis[start_id:start_id+cur_num] = \
                 [sum([D[j, blk[i, j]] for j in range(nsubq)])
                  for i in range(cur_num)]

@@ -49,13 +49,13 @@ def load_random(ntrain, nbase, nquery, d=16):
     return vtrain, vbase, vquery, ids_gnd
 
 
-def create_random_data():
+def create_random_data(ntrain=10**4, nbase=10**4, nquery=10**1):
     """
     Create random data
     """
     # synthetic dataset
-    vtrain, vbase, vquery, ids_gnd = load_random(
-        ntrain=10**4, nbase=10**4, nquery=10**1)
+    vtrain, vbase, vquery, ids_gnd = load_random(ntrain, nbase, nquery)
+    np.save('vbase', vbase[:10, :])
 
     return np.require(vtrain, np.single, requirements="C"),\
         np.require(vbase, np.single, requirements="C"),    \
@@ -83,6 +83,7 @@ def compute_stats(nquery, ids_gnd, ids_pqc, k):
             break
         r_at_i = (nn_ranks_pqc < i).sum() * 100.0 / nquery
         logging.warning('r@%3d = %.3f' % (i, r_at_i))
+    print "++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
 
 class TestPQNew(unittest.TestCase):
@@ -96,35 +97,31 @@ class TestPQNew(unittest.TestCase):
     def setUpClass(cls):
         cls.vtrain, cls.vbase, cls.vquery, cls.ids_gnd = \
             create_random_data()
+        cls.nsubq = 8
+        cls.topk = 100
 
     @classmethod
     def tearDownClass(cls):
         pass
 
     def test_pq_mem(self):
-        nsubq = 8
-        topk = 100
-
         idx = indexer.PQIndexer()
         idx.build({
             'vals': self.vtrain,
-            'nsubq': nsubq,
+            'nsubq': self.nsubq,
         })
         idx.save('mem.info')
         idx.set_storage('mem')
 
         idx.add(self.vbase)
-        ids, dis = idx.search(self.vquery, topk=topk)
-        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
-    def test_pq_lmdb(self):
-        nsubq = 8
-        topk = 100
-
+    def test_pq_lmdb_build_save_add_search(self):
         idx = indexer.PQIndexer()
         idx.build({
             'vals': self.vtrain,
-            'nsubq': nsubq,
+            'nsubq': self.nsubq,
         })
         idx.save('lmdb.info')
         idx.set_storage('lmdb', {
@@ -132,9 +129,10 @@ class TestPQNew(unittest.TestCase):
             'clear': True,
         })
         idx.add(self.vbase)
-        ids, dis = idx.search(self.vquery, topk=topk)
-        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
+    def test_pq_lmdb_SKIP_load_add_search(self):
         idx1 = indexer.PQIndexer()
         idx1.load('lmdb.info')
         idx1.set_storage('lmdb', {
@@ -142,17 +140,18 @@ class TestPQNew(unittest.TestCase):
             'clear': True,
         })
         idx1.add(self.vbase)
-        ids, dis = idx1.search(self.vquery, topk=topk)
-        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+        ids, dis = idx1.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
+    def test_pq_lmdb_SKIP_load_SKIP_search(self):
         idx2 = indexer.PQIndexer()
         idx2.load('lmdb.info')
         idx2.set_storage('lmdb', {
             'path': 'lmdb.idx',
             'clear': False,
         })
-        ids, dis = idx2.search(self.vquery, topk=topk)
-        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, topk)
+        ids, dis = idx2.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
 
 if __name__ == '__main__':
