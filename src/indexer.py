@@ -208,6 +208,7 @@ class PQIndexer(Indexer):
             cur_num = blk.shape[0]
             # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
             dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
+            start_id += cur_num
 
         return dis
 
