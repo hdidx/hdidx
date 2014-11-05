@@ -132,7 +132,7 @@ class LMDBPQStorage(PQStorage):
         path = pardic['path']
         clear = pardic.get('clear', False)
 
-        self.env = lmdb.open(path, max_dbs=3)
+        self.env = lmdb.open(path, map_size=2**30, max_dbs=3)
         self.db_keys = LMDBAccessor(self.env, 'keys')
         self.db_vals = LMDBAccessor(self.env, 'vals')
         self.db_info = LMDBAccessor(self.env, 'info')
