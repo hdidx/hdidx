@@ -10,9 +10,9 @@
 
 
 try:
-    from setuptools import setup
+    from setuptools import setup, Extension
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, Extension
 
 try:
     from pypandoc import convert
@@ -21,14 +21,28 @@ except ImportError:
     print "warning: pypandoc module not found, DONOT convert Markdown to RST"
     read_md = lambda f: open(f, 'r').read()
 
+import numpy
+from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.0.4',
+      version='0.0.5',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'src'},
       packages=['hdidx'],
-      scripts=['tests/test_indexer.py'],
+
+      cmdclass={'build_ext': build_ext},
+      ext_modules=[Extension("hdidx._cext",
+                             sources=[
+                                 "cext/_cext.pyx",
+                                 "cext/cext.c",
+                             ],
+                             include_dirs=[numpy.get_include(), "cext"])],
+
+      scripts=[
+          'tests/test_indexer.py',
+          'tests/test_cext.py',
+      ],
       url='https://github.com/wanji/hdidx',
       # license='LICENSE.txt',
       description='ANN Search in High-Dimensional Spaces',

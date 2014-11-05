@@ -13,7 +13,6 @@
 DESCRIPTION = """
 """
 
-# import ipdb
 import cPickle as pickle
 import logging
 
@@ -22,6 +21,8 @@ import numpy as np
 from util import kmeans, pq_kmeans_assign, pq_knn
 from distance import distFunc
 from storage import PQ_DIC
+
+import _cext as cext
 
 
 class Indexer(object):
@@ -198,7 +199,6 @@ class PQIndexer(Indexer):
             D: nsubq x ksub
         """
 
-        nsubq = D.shape[0]
         num_base_items = self.storage.get_num_items()
 
         dis = np.zeros(num_base_items)
@@ -206,10 +206,13 @@ class PQIndexer(Indexer):
 
         for keys, blk in self.storage:
             cur_num = blk.shape[0]
-            # dis[start_id:start_id+cur_num] = 0
-            dis[start_id:start_id+cur_num] = \
-                [sum([D[j, blk[i, j]] for j in range(nsubq)])
-                 for i in range(cur_num)]
-            start_id += cur_num
+            # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
+            dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
 
         return dis
+
+    @classmethod
+    def sumidxtab_core(cls, D, blk):
+        # return 0
+        return [sum([D[j, blk[i, j]] for j in range(D.shape[0])])
+                for i in range(blk.shape[0])]

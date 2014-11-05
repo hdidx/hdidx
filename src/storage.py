@@ -17,7 +17,6 @@ import itertools
 from struct import pack, unpack
 import lmdb
 import cPickle as pickle
-import ipdb
 
 
 class LMDBAccessor(object):
