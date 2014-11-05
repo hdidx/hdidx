@@ -4,3 +4,4 @@
 .ropeproject/
 dist/
 hdidx.egg-info/
+cext/_cext.c

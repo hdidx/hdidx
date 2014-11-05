@@ -30,7 +30,7 @@ def Euclidean(feat, query=None,
               is_sparse=False, is_trans=False):
     """ Euclidean distance.
     """
-    if None == query:
+    if query is None:
         (N, D) = feat.shape
         dotprod = feat.dot(feat.T)
         featl2norm = sp.repeat(dotprod.diagonal().reshape(1, -1), N, 0)
@@ -72,7 +72,7 @@ def Cosine(feat, query=None,
         rows_sums = np.array(feat2.sum(axis=1))[:, 0]
         feat.data /= rows_sums[feat2.nonzero()[0]]
 
-    if None == query:
+    if query is None:
         query = feat
     else:
         try:
@@ -102,7 +102,7 @@ def Cosine_DML(feat, M, query=None,
         rows_sums = np.array(feat2.sum(axis=1))[:, 0]
         feat.data /= rows_sums[feat2.nonzero()[0]]
 
-    if None == query:
+    if query is None:
         query = feat
     else:
         try:
@@ -123,7 +123,7 @@ def DotProduct(feat, query=None,
     """ DotProduct distance.
     """
     logging.debug("DotProduct")
-    if None == query:
+    if query is None:
         query = feat
     return -query.dot(feat.T)
 
@@ -132,7 +132,7 @@ def DotProduct_DML(feat, M, query=None,
                    is_sparse=False, is_trans=False):
     """ DotProduct distance with DML.
     """
-    if None == query:
+    if query is None:
         query = feat
     return -query.dot(M).dot(feat.T)
 
@@ -141,7 +141,7 @@ def DotProduct_DML_Diagonal(feat, M, query=None,
                             is_sparse=False, is_trans=False):
     """ DotProduct distance with DML.
     """
-    if None == query:
+    if query is None:
         query = feat
     query.data = query.data * M[query.nonzero()[1]]
     return -query.dot(feat.T)
@@ -152,7 +152,7 @@ def Intersection(feat, query=None,
     """ Intersection distance.
     """
     raise Exception("Untested function")
-    if None == query:
+    if query is None:
         query = feat
     qnum = query.shape[0]
     fnum = feat.shape[0]
@@ -169,7 +169,7 @@ def Intersection_DML(feat, M, query=None,
     """ Intersection distance with DML.
     """
     raise Exception("Untested function")
-    if None == query:
+    if query is None:
         query = feat
 
     qnum = query.shape[0]
