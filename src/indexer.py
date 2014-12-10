@@ -30,7 +30,8 @@ class Indexer(object):
         pass
 
     def __init__(self):
-        self.INST_ERR = "Instance of `Indexer` is not allowed!"
+        self.ERR_INSTAN = "Instance of `Indexer` is not allowed!"
+        self.ERR_UNIMPL = "Unimplemented method!"
         pass
 
     def __del__(self):
@@ -40,7 +41,7 @@ class Indexer(object):
         """
         Build the indexer based on given training data
         """
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_INSTAN)
 
     def load(self, path):
         """
@@ -60,32 +61,31 @@ class Indexer(object):
         """
         Set up the backend storage engine
         """
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_INSTAN)
 
     def add(self, vals, keys):
         """
         Add one or more items to the indexer
         """
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_INSTAN)
 
     def remove(self, keys):
         """
         Remove one or more items from the indexer
         """
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_INSTAN)
 
     def search(self, query, topk=None, thresh=None):
         """
         Search in the indexer for `k` nearest neighbors or
         neighbors in a distance of `thresh`
         """
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_INSTAN)
 
 
 class PQIndexer(Indexer):
     def __init__(self):
-        self.INST_ERR = "Instance of `Indexer` is not allowed!"
-        pass
+        Indexer.__init__(self)
 
     def __del__(self):
         pass
@@ -163,7 +163,7 @@ class PQIndexer(Indexer):
         # self.storage.add(codes, keys)
 
     def remove(self, keys):
-        raise Exception(self.INST_ERR)
+        raise Exception(self.ERR_UNIMPL)
 
     def search(self, query, topk=None, thresh=None):
         nq = query.shape[0]
