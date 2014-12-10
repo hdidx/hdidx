@@ -82,7 +82,7 @@ def compute_stats(nquery, ids_gnd, ids_pqc, k):
         if i > k:
             break
         r_at_i = (nn_ranks_pqc < i).sum() * 100.0 / nquery
-        logging.warning('r@%3d = %.3f' % (i, r_at_i))
+        logging.warning('\rr@%3d = %.3f' % (i, r_at_i))
 
 
 class TestPQNew(unittest.TestCase):
@@ -102,19 +102,6 @@ class TestPQNew(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pass
-
-    def test_pq_mem(self):
-        idx = indexer.PQIndexer()
-        idx.build({
-            'vals': self.vtrain,
-            'nsubq': self.nsubq,
-        })
-        idx.save('mem.info')
-        idx.set_storage('mem')
-
-        idx.add(self.vbase)
-        ids, dis = idx.search(self.vquery, topk=self.topk)
-        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_0_build_save_add_search(self):
         idx = indexer.PQIndexer()
@@ -152,6 +139,22 @@ class TestPQNew(unittest.TestCase):
         ids, dis = idx2.search(self.vquery, topk=self.topk)
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
+    def test_pq_mem(self):
+        idx = indexer.PQIndexer()
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': self.nsubq,
+        })
+        idx.save('mem.info')
+        idx.set_storage('mem')
+
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
 
 if __name__ == '__main__':
+    logging.warn("The results of mem storage and lmdb storage might be different " +
+        "even if the database and queries are exactly the same, this is because " +
+        "the randomization exists in k-means clustering.")
     unittest.main()
