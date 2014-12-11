@@ -75,7 +75,7 @@ class Indexer(object):
         """
         raise Exception(self.ERR_INSTAN)
 
-    def search(self, querys, topk=None, thresh=None):
+    def search(self, queries, topk=None, thresh=None):
         """
         Search in the indexer for `k` nearest neighbors or
         neighbors in a distance of `thresh`
@@ -155,8 +155,8 @@ class PQIndexer(Indexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, querys, topk=None, thresh=None):
-        nq = querys.shape[0]
+    def search(self, queries, topk=None, thresh=None):
+        nq = queries.shape[0]
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -170,7 +170,7 @@ class PQIndexer(Indexer):
         for qid in range(nq):
             # pre-compute the table of squared distance to centroids
             for q in range(nsubq):
-                vsub = querys[qid:qid+1, q*dsub:(q+1)*dsub]
+                vsub = queries[qid:qid+1, q*dsub:(q+1)*dsub]
                 distab[q:q+1, :] = distFunc['euclidean'](
                     centroids[q], vsub)
 
@@ -259,7 +259,8 @@ class IVFPQIndexer(PQIndexer):
             end_id = start_id + cur_num
             print "%8d/%d: %d" % (start_id, num_vals, cur_num)
 
-            cur_vals = vals[start_id:end_id, :]
+            # Here `copy()` is necessary, it ensures that you DONOT modify the vals
+            cur_vals = vals[start_id:end_id, :].copy()
             cur_cids = pq_kmeans_assign(coa_centroids, cur_vals)
             cur_vals -= coa_centroids[cur_cids, :]
 
@@ -276,8 +277,8 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, querys, topk=None, thresh=None, coa_nn=8):
-        nq = querys.shape[0]
+    def search(self, queries, topk=None, thresh=None, coa_nn=8):
+        nq = queries.shape[0]
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -289,9 +290,10 @@ class IVFPQIndexer(PQIndexer):
         dis = np.zeros((nq, topk), np.single)
         ids = np.zeros((nq, topk), np.int)
 
-        coa_dist = distFunc['euclidean'](coa_centroids, querys)
+        coa_dist = distFunc['euclidean'](coa_centroids, queries)
         for qid in range(nq):
-            query = querys[qid:qid+1, :]
+            # Here `copy()` is necessary, it ensures that you DONOT modify the queries 
+            query = queries[qid:qid+1, :].copy()
             coa_knn = pq_knn(coa_dist[qid, :], coa_nn)
             query -= coa_centroids[coa_knn[0], :]
             # pre-compute the table of squared distance to centroids
