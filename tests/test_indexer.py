@@ -20,6 +20,7 @@ import logging
 
 import numpy as np
 import scipy.io as spio
+import cProfile
 
 from hdidx.distance import distFunc
 from hdidx import indexer
@@ -50,7 +51,7 @@ def load_random(ntrain, nbase, nquery, d=16):
     return vtrain, vbase, vquery, ids_gnd
 
 
-def create_random_data(ntrain=10**4, nbase=10**4, nquery=10**1):
+def create_random_data(ntrain=10**4, nbase=10**4, nquery=10**2):
     """
     Create random data
     """
@@ -98,7 +99,7 @@ class TestPQNew(unittest.TestCase):
             create_random_data()
         cls.nsubq = 8
         cls.topk = 100
-        cls.coarsek = 16
+        cls.coarsek = 32
 
     @classmethod
     def tearDownClass(cls):
@@ -118,6 +119,8 @@ class TestPQNew(unittest.TestCase):
         })
         idx.add(self.vbase)
         ids, dis = idx.search(self.vquery, topk=self.topk)
+        # cProfile.runctx('ids, dis = idx.search(self.vquery, topk=self.topk)',
+        #                 None, locals())
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_ivfpq_lmdb_1_SKIP_load_add_search(self):
@@ -207,7 +210,9 @@ class TestPQNew(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    logging.warn("The results of mem storage and lmdb storage might be different " +
-        "even if the database and queries are exactly the same, this is because " +
-        "the randomization exists in k-means clustering.")
+    logging.warn("The results of mem storage and lmdb storage might be " +
+                 "different even if the database and queries are exactly " +
+                 "the same, this is because the randomization exists in " +
+                 "k-means clustering.")
     unittest.main(failfast=True)
+    # cProfile.run('unittest.main(failfast=True)')
