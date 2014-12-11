@@ -98,10 +98,63 @@ class TestPQNew(unittest.TestCase):
             create_random_data()
         cls.nsubq = 8
         cls.topk = 100
+        cls.coarsek = 16
 
     @classmethod
     def tearDownClass(cls):
         pass
+
+    def test_ivfpq_lmdb_0_build_save_add_search(self):
+        idx = indexer.IVFPQIndexer()
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': self.nsubq,
+            'coarsek': self.coarsek,
+        })
+        idx.save('ivf_lmdb.info')
+        idx.set_storage('lmdb', {
+            'path': 'ivf_lmdb.idx',
+            'clear': True,
+        })
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_ivfpq_lmdb_1_SKIP_load_add_search(self):
+        idx1 = indexer.IVFPQIndexer()
+        idx1.load('ivf_lmdb.info')
+        idx1.set_storage('lmdb', {
+            'path': 'ivf_lmdb.idx',
+            'clear': True,
+        })
+        idx1.add(self.vbase)
+        ids, dis = idx1.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_ivfpq_lmdb_2_SKIP_load_SKIP_search(self):
+        idx2 = indexer.IVFPQIndexer()
+        idx2.load('ivf_lmdb.info')
+        idx2.set_storage('lmdb', {
+            'path': 'ivf_lmdb.idx',
+            'clear': False,
+        })
+        ids, dis = idx2.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_ivfpq_mem(self):
+        idx = indexer.IVFPQIndexer()
+
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': self.nsubq,
+            'coarsek': self.coarsek,
+        })
+        idx.save('ivf_mem.info')
+        idx.set_storage('mem', {})
+
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_0_build_save_add_search(self):
         idx = indexer.PQIndexer()
@@ -157,4 +210,4 @@ if __name__ == '__main__':
     logging.warn("The results of mem storage and lmdb storage might be different " +
         "even if the database and queries are exactly the same, this is because " +
         "the randomization exists in k-means clustering.")
-    unittest.main()
+    unittest.main(failfast=True)

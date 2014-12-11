@@ -111,12 +111,6 @@ class PQIndexer(Indexer):
         """
         Initializing indexer data
         """
-        # idxdat = Indexer.IdxData()
-        # idxdat.nsubq = nsubq
-        # idxdat.ksub = ksub
-        # idxdat.dsub = dsub
-        # idxdat.centroids = [None for q in range(nsubq)]
-
         idxdat = dict()
         idxdat['nsubq'] = nsubq
         idxdat['ksub'] = ksub
@@ -156,14 +150,7 @@ class PQIndexer(Indexer):
             for q in range(nsubq):
                 vsub = vals[start_id:start_id+cur_num, q*dsub:(q+1)*dsub]
                 codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
-            # self.storage.add(codes, keys[start_id:start_id+cur_num])
-            self.storage.add(codes, keys)
-
-        # codes = np.zeros((num_vals, nsubq), np.uint8)
-        # for q in range(nsubq):
-        #     vsub = vals[:, q*dsub:(q+1)*dsub]
-        #     codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
-        # self.storage.add(codes, keys)
+            self.storage.add(codes, keys[start_id:start_id+cur_num])
 
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
@@ -205,7 +192,7 @@ class PQIndexer(Indexer):
         num_base_items = self.storage.get_num_items()
 
         dis = np.zeros(num_base_items)
-        ids = []
+        ids = np.arange(0)
 
         start_id = 0
         for keys, blk in self.storage:
@@ -213,12 +200,135 @@ class PQIndexer(Indexer):
             # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
             dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
             start_id += cur_num
-            ids += keys
+            ids = np.hstack((ids, keys))
 
-        return np.array(ids), dis
+        return ids, dis
 
     @classmethod
     def sumidxtab_core(cls, D, blk):
         # return 0
         return [sum([D[j, blk[i, j]] for j in range(D.shape[0])])
                 for i in range(blk.shape[0])]
+
+
+class IVFPQIndexer(PQIndexer):
+    def __init__(self):
+        PQIndexer.__init__(self)
+
+    def __del__(self):
+        pass
+
+    def build(self, pardic=None):
+        # training data
+        vals = pardic['vals']
+        # the number of coarse centroids
+        coarsek = pardic['coarsek']
+
+        logging.info('Building coarse quantizer - BEGIN')
+        coa_centroids = kmeans(vals, coarsek, niter=100)
+        cids = pq_kmeans_assign(coa_centroids, vals)
+        logging.info('Building coarse quantizer - DONE')
+
+        pardic['vals'] -= coa_centroids[cids, :]
+
+        PQIndexer.build(self, pardic)
+
+        self.idxdat['coa_centroids'] = coa_centroids
+        self.idxdat['coarsek'] = coarsek
+
+    def set_storage(self, storage_type='mem', storage_parm=None):
+        storage_parm['coarsek'] = self.idxdat['coarsek']
+        self.storage = createStorage(storage_type, storage_parm)
+
+    def add(self, vals, keys=None):
+        num_vals = vals.shape[0]
+        if keys is None:
+            num_base_items = sum([ivf.get_num_items() for ivf in self.storage])
+            keys = np.arange(num_base_items, num_base_items + num_vals)
+
+        dsub = self.idxdat['dsub']
+        nsubq = self.idxdat['nsubq']
+        centroids = self.idxdat['centroids']
+        coarsek = self.idxdat['coarsek']
+        coa_centroids = self.idxdat['coa_centroids']
+
+        blksize = self.idxdat.get('blksize', 16384)
+        start_id = 0
+        for start_id in range(0, num_vals, blksize):
+            cur_num = min(blksize, num_vals - start_id)
+            end_id = start_id + cur_num
+            print "%8d/%d: %d" % (start_id, num_vals, cur_num)
+
+            cur_vals = vals[start_id:end_id, :]
+            cur_cids = pq_kmeans_assign(coa_centroids, cur_vals)
+            cur_vals -= coa_centroids[cur_cids, :]
+
+            codes = np.zeros((cur_num, nsubq), np.uint8)
+            for q in range(nsubq):
+                vsub = cur_vals[:, q*dsub:(q+1)*dsub]
+                codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
+            # self.storage.add(codes, keys)
+            for ivfidx in xrange(coarsek):
+                self.storage[ivfidx].add(
+                    codes[cur_cids == ivfidx, :],
+                    keys[start_id:end_id][cur_cids == ivfidx])
+
+    def remove(self, keys):
+        raise Exception(self.ERR_UNIMPL)
+
+    def search(self, querys, topk=None, thresh=None, coa_nn=8):
+        nq = querys.shape[0]
+
+        dsub = self.idxdat['dsub']
+        nsubq = self.idxdat['nsubq']
+        ksub = self.idxdat['ksub']
+        centroids = self.idxdat['centroids']
+        coa_centroids = self.idxdat['coa_centroids']
+
+        distab = np.zeros((nsubq, ksub), np.single)
+        dis = np.zeros((nq, topk), np.single)
+        ids = np.zeros((nq, topk), np.int)
+
+        coa_dist = distFunc['euclidean'](coa_centroids, querys)
+        for qid in range(nq):
+            query = querys[qid:qid+1, :]
+            coa_knn = pq_knn(coa_dist[qid, :], coa_nn)
+            query -= coa_centroids[coa_knn[0], :]
+            # pre-compute the table of squared distance to centroids
+            for q in range(nsubq):
+                vsub = query[:, q*dsub:(q+1)*dsub]
+                distab[q:q+1, :] = distFunc['euclidean'](
+                    centroids[q], vsub)
+
+            # add the tabulated distances to construct the distance estimators
+            idsquerybase, disquerybase = self.sumidxtab(
+                distab, coa_knn)
+            cur_ids = pq_knn(disquerybase, topk)
+
+            ids[qid, :] = idsquerybase[cur_ids]
+            dis[qid, :] = disquerybase[cur_ids]
+
+        return ids, dis
+
+    def sumidxtab(self, D, coa_knn):
+        """
+        Compute distance to database items based on distances to centroids.
+            D: nsubq x ksub
+        """
+
+        num_candidates = sum([self.storage[ivfidx].get_num_items()
+                              for ivfidx in coa_knn])
+        dis = np.zeros(num_candidates)
+        ids = np.arange(0)
+
+        start_id = 0
+
+        for ivfidx in coa_knn:
+            for keys, blk in self.storage[ivfidx]:
+                cur_num = blk.shape[0]
+                # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
+                dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
+                start_id += cur_num
+                ids = np.hstack((ids, keys))
+
+        return ids, dis
