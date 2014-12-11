@@ -15,6 +15,7 @@ DESCRIPTION = """
 
 import cPickle as pickle
 import logging
+import time
 
 import numpy as np
 
@@ -277,7 +278,7 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, coa_nn=8):
+    def search(self, queries, topk=None, thresh=None, nn_coa=8):
         nq = queries.shape[0]
 
         dsub = self.idxdat['dsub']
@@ -291,46 +292,60 @@ class IVFPQIndexer(PQIndexer):
         ids = np.zeros((nq, topk), np.int)
 
         coa_dist = distFunc['euclidean'](coa_centroids, queries)
-        for qid in range(nq):
+        logging.warn('Start Querying ...')
+        time_start = time.time()
+        interval = 100 if nq >= 100 else 10
+        for qry_id in range(nq):
             # Here `copy()` is necessary, it ensures that you DONOT modify the queries 
-            query = queries[qid:qid+1, :].copy()
-            coa_knn = pq_knn(coa_dist[qid, :], coa_nn)
-            query -= coa_centroids[coa_knn[0], :]
-            # pre-compute the table of squared distance to centroids
-            for q in range(nsubq):
-                vsub = query[:, q*dsub:(q+1)*dsub]
-                distab[q:q+1, :] = distFunc['euclidean'](
-                    centroids[q], vsub)
+            query = queries[qry_id:qry_id+1, :].copy()
+            coa_knn = pq_knn(coa_dist[qry_id, :], nn_coa)
+            query = query - coa_centroids[coa_knn, :]
+            v_idsquerybase = []
+            v_disquerybase = []
+            for coa_idx in range(nn_coa):
+                # pre-compute the table of squared distance to centroids
+                for qnt_id in range(nsubq):
+                    vsub = query[coa_idx:coa_idx+1, qnt_id*dsub:(qnt_id+1)*dsub]
+                    distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
+                        centroids[qnt_id], vsub)
 
-            # add the tabulated distances to construct the distance estimators
-            idsquerybase, disquerybase = self.sumidxtab(
-                distab, coa_knn)
+                # add the tabulated distances to construct the distance estimators
+                idsquerybase, disquerybase = self.sumidxtab(
+                    distab, coa_knn[coa_idx])
+                v_idsquerybase.append(idsquerybase)
+                v_disquerybase.append(disquerybase)
+
+            idsquerybase = np.hstack(tuple(v_idsquerybase))
+            disquerybase = np.hstack(tuple(v_disquerybase))
             cur_ids = pq_knn(disquerybase, topk)
 
-            ids[qid, :] = idsquerybase[cur_ids]
-            dis[qid, :] = disquerybase[cur_ids]
+            ids[qry_id, :] = idsquerybase[cur_ids]
+            dis[qry_id, :] = disquerybase[cur_ids]
+            if (qry_id+1) % interval == 0:
+                logging.warn('\t%d/%d: %.4fs per query' % 
+                    (qry_id+1, nq, (time.time() - time_start) / interval))
+                time_start = time.time()
+        logging.warn('Querying Finished!')
 
         return ids, dis
 
-    def sumidxtab(self, D, coa_knn):
+    def sumidxtab(self, D, ivfidx):
         """
         Compute distance to database items based on distances to centroids.
             D: nsubq x ksub
         """
 
-        num_candidates = sum([self.storage[ivfidx].get_num_items()
-                              for ivfidx in coa_knn])
+        num_candidates = self.storage[ivfidx].get_num_items()
         dis = np.zeros(num_candidates)
         ids = np.arange(0)
 
         start_id = 0
 
-        for ivfidx in coa_knn:
-            for keys, blk in self.storage[ivfidx]:
-                cur_num = blk.shape[0]
-                # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
-                dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
-                start_id += cur_num
-                ids = np.hstack((ids, keys))
+        for keys, blk in self.storage[ivfidx]:
+            cur_num = blk.shape[0]
+            # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
+            dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
+            start_id += cur_num
+            ids = np.hstack((ids, keys))
 
         return ids, dis
