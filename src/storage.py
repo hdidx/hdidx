@@ -86,7 +86,7 @@ class LMDBAccessor(object):
 
 
 class PQStorage(object):
-    def __init__(self, pardic=None):
+    def __init__(self):
         self.blocks = None
         self.keys = None
         self.num_emptys = -1
@@ -109,7 +109,7 @@ class PQStorage(object):
 
 
 class MemPQStorage(PQStorage):
-    def __init__(self, pardic=None):
+    def __init__(self):
         PQStorage.__init__(self)
         self.blocks = []
         self.keys = []
@@ -125,16 +125,14 @@ class MemPQStorage(PQStorage):
 
 
 class LMDBPQStorage(PQStorage):
-    def __init__(self, pardic=None):
+    def __init__(self, env, clear, ivfidx=None):
         PQStorage.__init__(self)
 
-        path = pardic['path']
-        clear = pardic.get('clear', False)
-
-        self.env = lmdb.open(path, map_size=2**30, max_dbs=3)
-        self.db_keys = LMDBAccessor(self.env, 'keys')
-        self.db_vals = LMDBAccessor(self.env, 'vals')
-        self.db_info = LMDBAccessor(self.env, 'info')
+        self.env = env
+        ivfstr = '%06d' % ivfidx if ivfidx else ''
+        self.db_keys = LMDBAccessor(self.env, 'keys' + ivfstr)
+        self.db_vals = LMDBAccessor(self.env, 'vals' + ivfstr)
+        self.db_info = LMDBAccessor(self.env, 'info' + ivfstr)
 
         if clear:
             self.clear()
@@ -187,3 +185,29 @@ PQ_DIC = {
     'mem':  MemPQStorage,
     'lmdb': LMDBPQStorage,
 }
+
+
+def createStorage(storage_type, storage_parm=None):
+    coarsek = storage_parm.get('coarsek', 0) if storage_parm else 0
+
+    if storage_type == 'mem':
+        # create inverted file storage
+        if coarsek > 0:
+            return [MemPQStorage() for i in xrange(coarsek)]
+        # create normal storage
+        else:
+            return MemPQStorage()
+    elif storage_type == 'lmdb':
+        path = storage_parm['path']
+        clear = storage_parm.get('clear', False)
+
+        # create inverted file storage
+        if coarsek > 0:
+            env = lmdb.open(path, map_size=2**30, max_dbs=3 * coarsek)
+            return [LMDBPQStorage(env, clear, i) for i in xrange(coarsek)]
+        # create normal storage
+        else:
+            env = lmdb.open(path, map_size=2**30, max_dbs=3)
+            return LMDBPQStorage(env, clear)
+    else:
+        raise Exception('Wroing storage type: %s' % storage_type)
