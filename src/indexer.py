@@ -168,19 +168,29 @@ class PQIndexer(Indexer):
         dis = np.zeros((nq, topk), np.single)
         ids = np.zeros((nq, topk), np.int)
 
-        for qid in range(nq):
+        logging.warn('Start Querying ...')
+        time_start = time.time()
+        interval = 100 if nq >= 100 else 10
+        for qry_id in range(nq):
             # pre-compute the table of squared distance to centroids
-            for q in range(nsubq):
-                vsub = queries[qid:qid+1, q*dsub:(q+1)*dsub]
-                distab[q:q+1, :] = distFunc['euclidean'](
-                    centroids[q], vsub)
+            for qnt_id in range(nsubq):
+                vsub = queries[qry_id:qry_id+1, qnt_id*dsub:(qnt_id+1)*dsub]
+                distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
+                    centroids[qnt_id], vsub)
 
             # add the tabulated distances to construct the distance estimators
             idsquerybase, disquerybase = self.sumidxtab(distab)
             cur_ids = pq_knn(disquerybase, topk)
 
-            ids[qid, :] = idsquerybase[cur_ids]
-            dis[qid, :] = disquerybase[cur_ids]
+            ids[qry_id, :] = idsquerybase[cur_ids]
+            dis[qry_id, :] = disquerybase[cur_ids]
+
+            if (qry_id+1) % interval == 0:
+                logging.warn(
+                    '\t%d/%d: %.4fs per query' %
+                    (qry_id+1, nq, (time.time() - time_start) / interval))
+                time_start = time.time()
+        logging.warn('Querying Finished!')
 
         return ids, dis
 
@@ -260,7 +270,7 @@ class IVFPQIndexer(PQIndexer):
             end_id = start_id + cur_num
             print "%8d/%d: %d" % (start_id, num_vals, cur_num)
 
-            # Here `copy()` is necessary, it ensures that you DONOT modify the vals
+            # Here `copy()` can ensure that you DONOT modify the vals
             cur_vals = vals[start_id:end_id, :].copy()
             cur_cids = pq_kmeans_assign(coa_centroids, cur_vals)
             cur_vals -= coa_centroids[cur_cids, :]
@@ -278,7 +288,7 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=8):
+    def search(self, queries, topk=None, thresh=None, nn_coa=4):
         nq = queries.shape[0]
 
         dsub = self.idxdat['dsub']
@@ -296,7 +306,7 @@ class IVFPQIndexer(PQIndexer):
         time_start = time.time()
         interval = 100 if nq >= 100 else 10
         for qry_id in range(nq):
-            # Here `copy()` is necessary, it ensures that you DONOT modify the queries 
+            # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
             coa_knn = pq_knn(coa_dist[qry_id, :], nn_coa)
             query = query - coa_centroids[coa_knn, :]
@@ -305,11 +315,12 @@ class IVFPQIndexer(PQIndexer):
             for coa_idx in range(nn_coa):
                 # pre-compute the table of squared distance to centroids
                 for qnt_id in range(nsubq):
-                    vsub = query[coa_idx:coa_idx+1, qnt_id*dsub:(qnt_id+1)*dsub]
+                    vsub = query[coa_idx:coa_idx+1,
+                                 qnt_id*dsub:(qnt_id+1)*dsub]
                     distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
                         centroids[qnt_id], vsub)
 
-                # add the tabulated distances to construct the distance estimators
+                # construct the distance estimators from tabulated distances
                 idsquerybase, disquerybase = self.sumidxtab(
                     distab, coa_knn[coa_idx])
                 v_idsquerybase.append(idsquerybase)
@@ -322,7 +333,8 @@ class IVFPQIndexer(PQIndexer):
             ids[qry_id, :] = idsquerybase[cur_ids]
             dis[qry_id, :] = disquerybase[cur_ids]
             if (qry_id+1) % interval == 0:
-                logging.warn('\t%d/%d: %.4fs per query' % 
+                logging.warn(
+                    '\t%d/%d: %.4fs per query' %
                     (qry_id+1, nq, (time.time() - time_start) / interval))
                 time_start = time.time()
         logging.warn('Querying Finished!')
