@@ -17,6 +17,7 @@ import itertools
 from struct import pack, unpack
 import lmdb
 import cPickle as pickle
+import numpy as np
 
 
 class LMDBAccessor(object):
@@ -87,8 +88,8 @@ class LMDBAccessor(object):
 
 class PQStorage(object):
     def __init__(self):
-        self.blocks = None
         self.keys = None
+        self.codes = None
         self.num_emptys = -1
         self.num_items = -1
 
@@ -97,6 +98,12 @@ class PQStorage(object):
 
     def get_num_emptys(self):
         return self.num_emptys
+
+    def get_keys(self):
+        return self.keys
+
+    def get_codes(self):
+        return self.codes
 
     def __iter__(self):
         raise Exception("Instance of `PQStorage` is not allowed!")
@@ -111,58 +118,60 @@ class PQStorage(object):
 class MemPQStorage(PQStorage):
     def __init__(self):
         PQStorage.__init__(self)
-        self.blocks = []
-        self.keys = []
+        self.keys = np.arange(0)
+        self.codes = None
         self.num_items = 0
 
     def add(self, codes, keys):
-        self.blocks.append(codes)
-        self.keys.append(keys)
-        self.num_items += codes.shape[0]
+        num_new_items = codes.shape[0]
+        self.keys = np.hstack((self.keys, keys))
+        if self.codes is None:
+            self.codes = codes
+        else:
+            self.codes = np.vstack((self.codes, codes))
+        self.num_items += num_new_items
+        return num_new_items
 
     def __iter__(self):
-        return itertools.izip(self.keys, self.blocks)
+        return itertools.izip(self.keys, self.vals)
 
 
-class LMDBPQStorage(PQStorage):
+class LMDBPQStorage(MemPQStorage):
     def __init__(self, env, clear, ivfidx=None):
-        PQStorage.__init__(self)
+        MemPQStorage.__init__(self)
 
         self.env = env
-        ivfstr = '%06d' % ivfidx if ivfidx else ''
-        self.db_keys = LMDBAccessor(self.env, 'keys' + ivfstr)
-        self.db_vals = LMDBAccessor(self.env, 'vals' + ivfstr)
-        self.db_info = LMDBAccessor(self.env, 'info' + ivfstr)
+        dbname = 'db%06d' % ivfidx if ivfidx else 'db'
+        self.db = LMDBAccessor(self.env, dbname)
 
         if clear:
             self.clear()
 
-        self.num_items = self.db_info.getvi('num_items')
-        if self.num_items is None:
-            self.num_items = 0
-            self.db_info.setvi('num_items', self.num_items)
+        with self.env.begin() as txn:
+            self.num_items = txn.stat(self.db.db)['entries']
+            if self.num_items > 0:
+                cursor = txn.cursor(self.db.db)
+                keys = []
+                codes = []
+                for key, code in cursor:
+                    keys.append(unpack('i', key)[0])
+                    codes.append(pickle.loads(code))
+                self.keys = np.array(keys)
+                self.codes = np.vstack(tuple(codes))
 
     def __del__(self):
-        self.db_keys.close()
-        self.db_vals.close()
-        self.db_info.close()
-        self.env.close()
+        self.db.close()
 
     def add(self, codes, keys):
-        key = "%08d" % self.num_items
-
-        self.db_keys.set(key, pickle.dumps(keys, protocol=2))
-        self.db_vals.set(key, pickle.dumps(codes, protocol=2))
-
-        self.num_items += codes.shape[0]
-        self.db_info.setvi('num_items', self.num_items)
+        num_new_items = MemPQStorage.add(self, codes, keys)
+        for idx in xrange(num_new_items):
+            self.db.setki(keys[idx], pickle.dumps(codes[idx], protocol=2))
 
     def clear(self):
         with self.env.begin(write=True) as txt:
-            txt.drop(self.db_keys.db, False)
-            txt.drop(self.db_vals.db, False)
-            txt.drop(self.db_info.db, False)
+            txt.drop(self.db.db, False)
 
+"""
     def __iter__(self):
         self.iter_txt = self.env.begin()
         self.cursor_keys = self.iter_txt.cursor(self.db_keys.db)
@@ -179,6 +188,7 @@ class LMDBPQStorage(PQStorage):
         else:
             # self.iter_txt.close()
             raise StopIteration
+"""
 
 
 PQ_DIC = {
@@ -203,11 +213,11 @@ def createStorage(storage_type, storage_parm=None):
 
         # create inverted file storage
         if coarsek > 0:
-            env = lmdb.open(path, map_size=2**30, max_dbs=3 * coarsek)
+            env = lmdb.open(path, map_size=2**30, sync=False, max_dbs=coarsek)
             return [LMDBPQStorage(env, clear, i) for i in xrange(coarsek)]
         # create normal storage
         else:
-            env = lmdb.open(path, map_size=2**30, max_dbs=3)
+            env = lmdb.open(path, map_size=2**30, sync=False, max_dbs=1)
             return LMDBPQStorage(env, clear)
     else:
         raise Exception('Wroing storage type: %s' % storage_type)

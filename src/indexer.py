@@ -200,6 +200,14 @@ class PQIndexer(Indexer):
             D: nsubq x ksub
         """
 
+        ids = self.storage.get_keys()
+        dis = cext.sumidxtab_core(D, self.storage.get_codes())
+
+        return np.array(ids), np.array(dis)
+
+        """
+        Deprecated code
+        """
         num_base_items = self.storage.get_num_items()
 
         dis = np.zeros(num_base_items)
@@ -288,7 +296,7 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=4):
+    def search(self, queries, topk=None, thresh=None, nn_coa=8):
         nq = queries.shape[0]
 
         dsub = self.idxdat['dsub']
@@ -347,6 +355,14 @@ class IVFPQIndexer(PQIndexer):
             D: nsubq x ksub
         """
 
+        ids = self.storage[ivfidx].get_keys()
+        dis = cext.sumidxtab_core(D, self.storage[ivfidx].get_codes())
+
+        return np.array(ids), np.array(dis)
+
+        """
+        Deprecated code
+        """
         num_candidates = self.storage[ivfidx].get_num_items()
         dis = np.zeros(num_candidates)
         ids = np.arange(0)

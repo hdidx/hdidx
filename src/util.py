@@ -34,11 +34,11 @@ Different options for kmeans.
 
 """
 def kmeans_yael(vs, ks, niter):
-    return ynumpy.kmeans(vs, ks, niter=100, verbose=True)
+    return ynumpy.kmeans(vs, ks, niter=niter, verbose=True)
 
 
 def kmeans_sklearn(vs, ks, niter):
-    kmeans = KMeans(n_clusters=ks, max_iter=100)
+    kmeans = KMeans(n_clusters=ks, max_iter=niter)
     kmeans.fit(vs)
     return kmeans.cluster_centers_
 """
@@ -46,7 +46,7 @@ def kmeans_sklearn(vs, ks, niter):
 
 def kmeans_cv2(vs, ks, niter):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-                100, 0.01)
+                niter, 0.01)
     flags = cv2.KMEANS_RANDOM_CENTERS
     compactness, labels, centers = cv2.kmeans(
         vs, ks, criteria, 1, flags)
