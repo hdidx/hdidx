@@ -3,5 +3,6 @@
 *.log
 .ropeproject/
 dist/
+build/
 hdidx.egg-info/
 cext/_cext.c

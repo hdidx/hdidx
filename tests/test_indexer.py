@@ -13,6 +13,7 @@
 DESCRIPTION = """
 """
 
+import os
 import unittest
 
 import time
@@ -57,7 +58,7 @@ def create_random_data(ntrain=10**4, nbase=10**4, nquery=10**2):
     """
     # synthetic dataset
     vtrain, vbase, vquery, ids_gnd = load_random(ntrain, nbase, nquery)
-    spio.savemat('vbase.mat', {'feat': vbase[:10, :]})
+    spio.savemat('/tmp/hdidx_test_vbase.mat', {'feat': vbase[:10, :]})
 
     return np.require(vtrain, np.single, requirements="C"),\
         np.require(vbase, np.single, requirements="C"),    \
@@ -119,10 +120,10 @@ class TestPQNew(unittest.TestCase):
             'coarsek': self.coarsek,
         })
         # saving indexer to disk file
-        idx.save('ivf_lmdb.info')
+        idx.save('/tmp/hdidx_test_ivf_lmdb.info')
         # set backend storage
         idx.set_storage('lmdb', {
-            'path': 'ivf_lmdb.idx',
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
             'clear': True,
         })
         # indexing
@@ -143,10 +144,10 @@ class TestPQNew(unittest.TestCase):
         # create indexer
         idx = indexer.IVFPQIndexer()
         # load indexer from disk file
-        idx.load('ivf_lmdb.info')
+        idx.load('/tmp/hdidx_test_ivf_lmdb.info')
         # set backend storage
         idx.set_storage('lmdb', {
-            'path': 'ivf_lmdb.idx',
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
             'clear': True,
         })
         # indexing
@@ -164,10 +165,10 @@ class TestPQNew(unittest.TestCase):
         # create indexer
         idx = indexer.IVFPQIndexer()
         # load indexer from disk file
-        idx.load('ivf_lmdb.info')
+        idx.load('/tmp/hdidx_test_ivf_lmdb.info')
         # set backend storage
         idx.set_storage('lmdb', {
-            'path': 'ivf_lmdb.idx',
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
             'clear': False,
         })
         # search
@@ -185,7 +186,7 @@ class TestPQNew(unittest.TestCase):
             'nsubq': self.nsubq,
             'coarsek': self.coarsek,
         })
-        idx.save('ivf_mem.info')
+        idx.save('/tmp/hdidx_test_ivf_mem.info')
         idx.set_storage('mem', {})
 
         idx.add(self.vbase)
@@ -201,9 +202,9 @@ class TestPQNew(unittest.TestCase):
             'vals': self.vtrain,
             'nsubq': self.nsubq,
         })
-        idx.save('lmdb.info')
+        idx.save('/tmp/hdidx_test_lmdb.info')
         idx.set_storage('lmdb', {
-            'path': 'lmdb.idx',
+            'path': '/tmp/hdidx_test_lmdb.idx',
             'clear': True,
         })
         idx.add(self.vbase)
@@ -215,9 +216,9 @@ class TestPQNew(unittest.TestCase):
                 load pre-computed quantizers from disk file
         """
         idx = indexer.PQIndexer()
-        idx.load('lmdb.info')
+        idx.load('/tmp/hdidx_test_lmdb.info')
         idx.set_storage('lmdb', {
-            'path': 'lmdb.idx',
+            'path': '/tmp/hdidx_test_lmdb.idx',
             'clear': True,
         })
         idx.add(self.vbase)
@@ -230,9 +231,9 @@ class TestPQNew(unittest.TestCase):
                 2. load indices from LMDB
         """
         idx = indexer.PQIndexer()
-        idx.load('lmdb.info')
+        idx.load('/tmp/hdidx_test_lmdb.info')
         idx.set_storage('lmdb', {
-            'path': 'lmdb.idx',
+            'path': '/tmp/hdidx_test_lmdb.idx',
             'clear': False,
         })
         ids, dis = idx.search(self.vquery, topk=self.topk)
@@ -247,7 +248,7 @@ class TestPQNew(unittest.TestCase):
             'vals': self.vtrain,
             'nsubq': self.nsubq,
         })
-        idx.save('mem.info')
+        idx.save('/tmp/hdidx_test_mem.info')
         idx.set_storage('mem')
 
         idx.add(self.vbase)
@@ -260,5 +261,6 @@ if __name__ == '__main__':
                  "different even if the database and queries are exactly " +
                  "the same, this is because the randomization exists in " +
                  "k-means clustering.")
+    os.system("rm -fr /tmp/hdidx_test_*")
     unittest.main(failfast=True)
     # cProfile.run('unittest.main(failfast=True)')
