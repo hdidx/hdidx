@@ -20,7 +20,7 @@ import logging
 
 import numpy as np
 import scipy.io as spio
-import cProfile
+# import cProfile
 
 from hdidx.distance import distFunc
 from hdidx import indexer
@@ -106,45 +106,78 @@ class TestPQNew(unittest.TestCase):
         pass
 
     def test_ivfpq_lmdb_0_build_save_add_search(self):
+        """ Test IVFPQ: LMDB storage
+                from scratch
+        """
+
+        # create indexer
         idx = indexer.IVFPQIndexer()
+        # building code books
         idx.build({
             'vals': self.vtrain,
             'nsubq': self.nsubq,
             'coarsek': self.coarsek,
         })
+        # saving indexer to disk file
         idx.save('ivf_lmdb.info')
+        # set backend storage
         idx.set_storage('lmdb', {
             'path': 'ivf_lmdb.idx',
             'clear': True,
         })
+        # indexing
         idx.add(self.vbase)
+        # search
         ids, dis = idx.search(self.vquery, topk=self.topk)
+
         # cProfile.runctx('ids, dis = idx.search(self.vquery, topk=self.topk)',
         #                 None, locals())
+
+        # evaluate
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_ivfpq_lmdb_1_SKIP_load_add_search(self):
-        idx1 = indexer.IVFPQIndexer()
-        idx1.load('ivf_lmdb.info')
-        idx1.set_storage('lmdb', {
+        """ Test IVFPQ: LMDB storage
+                load pre-computed quantizers from disk file
+        """
+        # create indexer
+        idx = indexer.IVFPQIndexer()
+        # load indexer from disk file
+        idx.load('ivf_lmdb.info')
+        # set backend storage
+        idx.set_storage('lmdb', {
             'path': 'ivf_lmdb.idx',
             'clear': True,
         })
-        idx1.add(self.vbase)
-        ids, dis = idx1.search(self.vquery, topk=self.topk)
+        # indexing
+        idx.add(self.vbase)
+        # search
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        # evaluate
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_ivfpq_lmdb_2_SKIP_load_SKIP_search(self):
-        idx2 = indexer.IVFPQIndexer()
-        idx2.load('ivf_lmdb.info')
-        idx2.set_storage('lmdb', {
+        """ Test IVFPQ: LMDB storage
+                1. load pre-computed quantizers from disk file
+                2. load indices from LMDB
+        """
+        # create indexer
+        idx = indexer.IVFPQIndexer()
+        # load indexer from disk file
+        idx.load('ivf_lmdb.info')
+        # set backend storage
+        idx.set_storage('lmdb', {
             'path': 'ivf_lmdb.idx',
             'clear': False,
         })
-        ids, dis = idx2.search(self.vquery, topk=self.topk)
+        # search
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        # evaluate
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_ivfpq_mem(self):
+        """ Test IVFPQ: memory storage
+        """
         idx = indexer.IVFPQIndexer()
 
         idx.build({
@@ -160,6 +193,9 @@ class TestPQNew(unittest.TestCase):
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_0_build_save_add_search(self):
+        """ Test PQ: LMDB storage
+                from scratch
+        """
         idx = indexer.PQIndexer()
         idx.build({
             'vals': self.vtrain,
@@ -175,27 +211,37 @@ class TestPQNew(unittest.TestCase):
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_1_SKIP_load_add_search(self):
-        idx1 = indexer.PQIndexer()
-        idx1.load('lmdb.info')
-        idx1.set_storage('lmdb', {
+        """ Test PQ: LMDB storage
+                load pre-computed quantizers from disk file
+        """
+        idx = indexer.PQIndexer()
+        idx.load('lmdb.info')
+        idx.set_storage('lmdb', {
             'path': 'lmdb.idx',
             'clear': True,
         })
-        idx1.add(self.vbase)
-        ids, dis = idx1.search(self.vquery, topk=self.topk)
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_2_SKIP_load_SKIP_search(self):
-        idx2 = indexer.PQIndexer()
-        idx2.load('lmdb.info')
-        idx2.set_storage('lmdb', {
+        """ Test PQ: LMDB storage
+                1. load pre-computed quantizers from disk file
+                2. load indices from LMDB
+        """
+        idx = indexer.PQIndexer()
+        idx.load('lmdb.info')
+        idx.set_storage('lmdb', {
             'path': 'lmdb.idx',
             'clear': False,
         })
-        ids, dis = idx2.search(self.vquery, topk=self.topk)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_mem(self):
+        """ Test PQ: memory storage
+                from scratch
+        """
         idx = indexer.PQIndexer()
         idx.build({
             'vals': self.vtrain,
