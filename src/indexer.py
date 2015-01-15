@@ -135,7 +135,8 @@ class PQIndexer(Indexer):
         num_vals = vals.shape[0]
         if keys is None:
             num_base_items = self.storage.get_num_items()
-            keys = range(num_base_items, num_base_items + num_vals)
+            keys = np.arange(num_base_items, num_base_items + num_vals,
+                             dtype=np.int32)
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -166,7 +167,7 @@ class PQIndexer(Indexer):
 
         distab = np.zeros((nsubq, ksub), np.single)
         dis = np.zeros((nq, topk), np.single)
-        ids = np.zeros((nq, topk), np.int)
+        ids = np.zeros((nq, topk), np.int32)
 
         logging.warn('Start Querying ...')
         time_start = time.time()
@@ -263,7 +264,8 @@ class IVFPQIndexer(PQIndexer):
         num_vals = vals.shape[0]
         if keys is None:
             num_base_items = sum([ivf.get_num_items() for ivf in self.storage])
-            keys = np.arange(num_base_items, num_base_items + num_vals)
+            keys = np.arange(num_base_items, num_base_items + num_vals,
+                             dtype=np.int32)
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -307,7 +309,7 @@ class IVFPQIndexer(PQIndexer):
 
         distab = np.zeros((nsubq, ksub), np.single)
         dis = np.zeros((nq, topk), np.single)
-        ids = np.zeros((nq, topk), np.int)
+        ids = np.zeros((nq, topk), np.int32)
 
         coa_dist = distFunc['euclidean'](coa_centroids, queries)
         logging.warn('Start Querying ...')

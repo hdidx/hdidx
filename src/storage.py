@@ -118,7 +118,7 @@ class PQStorage(object):
 class MemPQStorage(PQStorage):
     def __init__(self):
         PQStorage.__init__(self)
-        self.keys = np.arange(0)
+        self.keys = np.arange(0, dtype=np.int32)
         self.codes = None
         self.num_items = 0
 
