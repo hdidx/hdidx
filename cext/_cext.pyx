@@ -25,6 +25,10 @@ cdef extern from "cext.h":
     void sumidxtab_core_cfunc(const np.float32_t * D, const np.uint8_t * blk,
         int nsq, int ksub, int cur_num, np.float32_t * out)
 
+cdef extern from "cext.h":
+    void pq_knn_cfunc(const np.float32_t * dist, int total,
+                      int topk, np.int32_t * out)
+
 # create the wrapper code, with numpy type annotations
 def sumidxtab_core(np.ndarray[np.float32_t, ndim=2, mode="c"] D not None,
                    np.ndarray[np.uint8_t, ndim=2, mode="c"] blk not None):
@@ -34,3 +38,13 @@ def sumidxtab_core(np.ndarray[np.float32_t, ndim=2, mode="c"] D not None,
                          D.shape[0], D.shape[1], blk.shape[0],
                          <np.float32_t*> np.PyArray_DATA(out))
     return out
+
+# create the wrapper code, with numpy type annotations
+def pq_knn(np.ndarray[np.float32_t, ndim=1, mode="c"] dist not None,
+           int topk):
+    out = np.zeros(dist.shape[0], np.int32)
+    pq_knn_cfunc(<np.float32_t*> np.PyArray_DATA(dist),
+                 dist.shape[0], topk,
+                 <np.int32_t*> np.PyArray_DATA(out))
+    return out
+

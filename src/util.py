@@ -23,6 +23,7 @@ import cv2
 # distance
 from distance import distFunc
 import bottleneck
+# import _cext as cext
 
 
 """
@@ -65,5 +66,6 @@ def pq_kmeans_assign(centroids, query):
 
 def pq_knn(dist, topk):
     ids = bottleneck.argpartsort(dist, topk)[:topk]
+    # ids = cext.pq_knn(dist, topk)
     ids = ids[dist[ids].argsort()]
     return ids

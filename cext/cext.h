@@ -8,3 +8,6 @@
 
 void sumidxtab_core_cfunc(const float * D, const uint8_t * blk,
     int nsq, int ksub, int cur_num, float * out);
+
+void pq_knn_cfunc(const float * dist, int total, int topk, int32_t * out);
+
