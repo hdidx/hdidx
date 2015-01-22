@@ -137,6 +137,8 @@ class PQIndexer(Indexer):
             num_base_items = self.storage.get_num_items()
             keys = np.arange(num_base_items, num_base_items + num_vals,
                              dtype=np.int32)
+        else:
+            keys = np.array(keys, dtype=np.int32).reshape(-1)
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -166,32 +168,53 @@ class PQIndexer(Indexer):
         centroids = self.idxdat['centroids']
 
         distab = np.zeros((nsubq, ksub), np.single)
-        dis = np.zeros((nq, topk), np.single)
-        ids = np.zeros((nq, topk), np.int32)
+        dis = np.ones((nq, topk), np.single) * np.inf
+        ids = np.ones((nq, topk), np.int32) * -1
 
-        logging.warn('Start Querying ...')
+        logging.info('Start Querying ...')
         time_start = time.time()
         interval = 100 if nq >= 100 else 10
+        dbg_qnt = []
+        dbg_sit = []
+        dbg_knn = []
+        dbg_ret = []
         for qry_id in range(nq):
+            t0 = time.time()
             # pre-compute the table of squared distance to centroids
             for qnt_id in range(nsubq):
                 vsub = queries[qry_id:qry_id+1, qnt_id*dsub:(qnt_id+1)*dsub]
                 distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
                     centroids[qnt_id], vsub)
+            dbg_qnt.append(time.time() - t0)
 
+            t0 = time.time()
             # add the tabulated distances to construct the distance estimators
             idsquerybase, disquerybase = self.sumidxtab(distab)
-            cur_ids = pq_knn(disquerybase, topk)
+            dbg_sit.append(time.time() - t0)
 
+            t0 = time.time()
+            cur_ids = pq_knn(disquerybase, topk)
+            dbg_knn.append(time.time() - t0)
+
+            t0 = time.time()
             ids[qry_id, :] = idsquerybase[cur_ids]
             dis[qry_id, :] = disquerybase[cur_ids]
+            dbg_ret.append(time.time() - t0)
 
             if (qry_id+1) % interval == 0:
-                logging.warn(
+                logging.info(
                     '\t%d/%d: %.4fs per query' %
                     (qry_id+1, nq, (time.time() - time_start) / interval))
                 time_start = time.time()
-        logging.warn('Querying Finished!')
+                logging.debug("\tquantizing:%.4f" % np.mean(dbg_qnt))
+                logging.debug("\tsumidxtab: %.4f" % np.mean(dbg_sit))
+                logging.debug("\t   pq_knn: %.4f" % np.mean(dbg_knn))
+                logging.debug("\t   genret: %.4f" % np.mean(dbg_ret))
+                dbg_qnt = []
+                dbg_sit = []
+                dbg_knn = []
+                dbg_ret = []
+        logging.info('Querying Finished!')
 
         return ids, dis
 
@@ -209,20 +232,20 @@ class PQIndexer(Indexer):
         """
         Deprecated code
         """
-        num_base_items = self.storage.get_num_items()
+        # num_base_items = self.storage.get_num_items()
 
-        dis = np.zeros(num_base_items)
-        ids = np.arange(0)
+        # dis = np.zeros(num_base_items)
+        # ids = np.arange(0)
 
-        start_id = 0
-        for keys, blk in self.storage:
-            cur_num = blk.shape[0]
-            # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
-            dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
-            start_id += cur_num
-            ids = np.hstack((ids, keys))
+        # start_id = 0
+        # for keys, blk in self.storage:
+        #     cur_num = blk.shape[0]
+        #     # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
+        #     dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
+        #     start_id += cur_num
+        #     ids = np.hstack((ids, keys))
 
-        return ids, dis
+        # return ids, dis
 
     @classmethod
     def sumidxtab_core(cls, D, blk):
@@ -266,6 +289,8 @@ class IVFPQIndexer(PQIndexer):
             num_base_items = sum([ivf.get_num_items() for ivf in self.storage])
             keys = np.arange(num_base_items, num_base_items + num_vals,
                              dtype=np.int32)
+        else:
+            keys = np.array(keys, dtype=np.int32).reshape(-1)
 
         dsub = self.idxdat['dsub']
         nsubq = self.idxdat['nsubq']
@@ -308,11 +333,11 @@ class IVFPQIndexer(PQIndexer):
         coa_centroids = self.idxdat['coa_centroids']
 
         distab = np.zeros((nsubq, ksub), np.single)
-        dis = np.zeros((nq, topk), np.single)
-        ids = np.zeros((nq, topk), np.int32)
+        dis = np.ones((nq, topk), np.single) * np.inf
+        ids = np.ones((nq, topk), np.int32) * -1
 
         coa_dist = distFunc['euclidean'](coa_centroids, queries)
-        logging.warn('Start Querying ...')
+        logging.info('Start Querying ...')
         time_start = time.time()
         interval = 100 if nq >= 100 else 10
         for qry_id in range(nq):
@@ -338,16 +363,17 @@ class IVFPQIndexer(PQIndexer):
 
             idsquerybase = np.hstack(tuple(v_idsquerybase))
             disquerybase = np.hstack(tuple(v_disquerybase))
-            cur_ids = pq_knn(disquerybase, topk)
+            realk = min(disquerybase.shape[0], topk)
+            cur_ids = pq_knn(disquerybase, realk)
 
-            ids[qry_id, :] = idsquerybase[cur_ids]
-            dis[qry_id, :] = disquerybase[cur_ids]
+            ids[qry_id, :realk] = idsquerybase[cur_ids]
+            dis[qry_id, :realk] = disquerybase[cur_ids]
             if (qry_id+1) % interval == 0:
-                logging.warn(
+                logging.info(
                     '\t%d/%d: %.4fs per query' %
                     (qry_id+1, nq, (time.time() - time_start) / interval))
                 time_start = time.time()
-        logging.warn('Querying Finished!')
+        logging.info('Querying Finished!')
 
         return ids, dis
 
@@ -358,7 +384,10 @@ class IVFPQIndexer(PQIndexer):
         """
 
         ids = self.storage[ivfidx].get_keys()
-        dis = cext.sumidxtab_core(D, self.storage[ivfidx].get_codes())
+        if ids.shape[0] == 0:
+            dis = np.ndarray(0)
+        else:
+            dis = cext.sumidxtab_core(D, self.storage[ivfidx].get_codes())
 
         return np.array(ids), np.array(dis)
 
