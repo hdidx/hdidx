@@ -25,7 +25,7 @@ import numpy
 from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.0.8',
+      version='0.0.11',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'src'},
