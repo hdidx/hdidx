@@ -19,7 +19,7 @@ import time
 
 import numpy as np
 
-from util import kmeans, pq_kmeans_assign, pq_knn
+from util import kmeans, pq_kmeans_assign, pq_knn, Profiler
 from distance import distFunc
 from storage import createStorage
 
@@ -171,50 +171,43 @@ class PQIndexer(Indexer):
         dis = np.ones((nq, topk), np.single) * np.inf
         ids = np.ones((nq, topk), np.int32) * -1
 
+        profiler = Profiler()
         interval = 100 if nq >= 100 else 10
-        dbg_qnt = []
-        dbg_sit = []
-        dbg_knn = []
-        dbg_ret = []
+        time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
-        time_start = time.time()
         for qry_id in range(nq):
-            t0 = time.time()
+            profiler.start("distab")    # time for computing distance table
             # pre-compute the table of squared distance to centroids
             for qnt_id in range(nsubq):
                 vsub = queries[qry_id:qry_id+1, qnt_id*dsub:(qnt_id+1)*dsub]
                 distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
                     centroids[qnt_id], vsub)
-            dbg_qnt.append(time.time() - t0)
+            profiler.end()
 
-            t0 = time.time()
+            profiler.start("distance")  # time for computing the distances
             # add the tabulated distances to construct the distance estimators
             idsquerybase, disquerybase = self.sumidxtab(distab)
-            dbg_sit.append(time.time() - t0)
+            profiler.end()
 
-            t0 = time.time()
+            profiler.start("knn")       # time for finding the kNN
             cur_ids = pq_knn(disquerybase, topk)
-            dbg_knn.append(time.time() - t0)
+            profiler.end()
 
-            t0 = time.time()
+            profiler.start("result")    # time for getting final result
             ids[qry_id, :] = idsquerybase[cur_ids]
             dis[qry_id, :] = disquerybase[cur_ids]
-            dbg_ret.append(time.time() - t0)
+            profiler.end()
 
             if (qry_id+1) % interval == 0:
+                time_total += profiler.sum_overall()
                 logging.info(
                     '\t%d/%d: %.4fs per query' %
-                    (qry_id+1, nq, (time.time() - time_start) / interval))
-                time_start = time.time()
-                logging.debug("\tquantizing:%.4f" % np.mean(dbg_qnt))
-                logging.debug("\tsumidxtab: %.4f" % np.mean(dbg_sit))
-                logging.debug("\t   pq_knn: %.4f" % np.mean(dbg_knn))
-                logging.debug("\t   genret: %.4f" % np.mean(dbg_ret))
-                dbg_qnt = []
-                dbg_sit = []
-                dbg_knn = []
-                dbg_ret = []
+                    (qry_id+1, nq, profiler.sum_average()))
+                logging.info("\t\t%s" % profiler.str_average())
+                profiler.reset()
         logging.info('Querying Finished!')
+        time_total += profiler.sum_overall()
+        logging.info("Average querying time: %.4f" % (time_total / nq))
 
         return ids, dis
 
