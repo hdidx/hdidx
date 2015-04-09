@@ -87,6 +87,7 @@ class Indexer(object):
 class PQIndexer(Indexer):
     def __init__(self):
         Indexer.__init__(self)
+        self.set_storage()
 
     def __del__(self):
         pass
@@ -122,7 +123,8 @@ class PQIndexer(Indexer):
         logging.info("Building codebooks in subspaces - BEGIN")
         for q in range(nsubq):
             logging.info("\tsubspace %d/%d:" % (q, nsubq))
-            vs = np.require(vals[:, q*dsub:(q+1)*dsub], requirements='C')
+            vs = np.require(vals[:, q*dsub:(q+1)*dsub],
+                            requirements='C', dtype=np.float32)
             idxdat['centroids'][q] = kmeans(vs, ksub, niter=100)
         logging.info("Building codebooks in subspaces - DONE")
 
@@ -148,7 +150,7 @@ class PQIndexer(Indexer):
         start_id = 0
         for start_id in range(0, num_vals, blksize):
             cur_num = min(blksize, num_vals - start_id)
-            print "%8d/%d: %d" % (start_id, num_vals, cur_num)
+            logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
 
             codes = np.zeros((cur_num, nsubq), np.uint8)
             for q in range(nsubq):
@@ -296,7 +298,7 @@ class IVFPQIndexer(PQIndexer):
         for start_id in range(0, num_vals, blksize):
             cur_num = min(blksize, num_vals - start_id)
             end_id = start_id + cur_num
-            print "%8d/%d: %d" % (start_id, num_vals, cur_num)
+            logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
 
             # Here `copy()` can ensure that you DONOT modify the vals
             cur_vals = vals[start_id:end_id, :].copy()

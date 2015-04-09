@@ -13,13 +13,7 @@
 DESCRIPTION = """
 """
 
-"""
-KMeans
-"""
-# from sklearn.cluster import KMeans
-# from yael import ynumpy
-import cv2
-
+import logging
 # distance
 from distance import distFunc
 import bottleneck
@@ -27,39 +21,31 @@ import bottleneck
 # profiling
 import time
 
-
 """
-Different options for kmeans.
-1. kmeans_yael
-2. kmeans_cv2
-3. kmeans_sklearn
+KMeans
 """
 
-"""
-def kmeans_yael(vs, ks, niter):
-    return ynumpy.kmeans(vs, ks, niter=niter, verbose=True)
+try:
+    import cv2
 
+    def kmeans(vs, ks, niter):
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+                    niter, 0.01)
+        flags = cv2.KMEANS_RANDOM_CENTERS
+        compactness, labels, centers = cv2.kmeans(
+            vs, ks, criteria, 1, flags)
+        return centers
+except ImportError:
+    logging.warn("Cannot find OpenCV, using `kmeans` from SciPy instead.")
+    from scipy.cluster import vq
 
-def kmeans_sklearn(vs, ks, niter):
-    kmeans = KMeans(n_clusters=ks, max_iter=niter)
-    kmeans.fit(vs)
-    return kmeans.cluster_centers_
-"""
-
-
-def kmeans_cv2(vs, ks, niter):
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
-                niter, 0.01)
-    flags = cv2.KMEANS_RANDOM_CENTERS
-    compactness, labels, centers = cv2.kmeans(
-        vs, ks, criteria, 1, flags)
-    return centers
-
-
-kmeans = kmeans_cv2
+    def kmeans(vs, ks, niter):
+        centers, labels = vq.kmeans2(vs, ks, niter)
+        return centers
 
 
 # finding nearest neighbor
+
 
 def pq_kmeans_assign(centroids, query):
     dist = distFunc['euclidean'](centroids, query)
