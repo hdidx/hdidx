@@ -24,6 +24,8 @@ By default, `HDIdx` use kmeans algorithm provided by `SciPy`. To be more efficie
 
 ## Example
 
+Here is a simple example. See this [notebook](http://nbviewer.ipython.org/gist/wanji/c08693f06ef744feef50) for more examples.
+
 ```python
 # import necessary packages
 
@@ -40,8 +42,6 @@ X_qry = np.random.random((nqry, ndim)).astype(np.float32)
 
 # create Product Quantization Indexer
 idx = hdidx.indexer.PQIndexer()
-# set storage for the indexer, the default is store indexex in memory
-idx.set_storage()
 # build indexer
 idx.build({'vals': X_db, 'nsubq': 8})
 # add database items to the indexer
