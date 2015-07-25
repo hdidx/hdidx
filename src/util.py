@@ -13,13 +13,28 @@
 DESCRIPTION = """
 """
 
+import os
 import logging
 # distance
 from distance import distFunc
 import bottleneck
+from scipy.io import loadmat
 
 # profiling
 import time
+
+
+DO_NORM = {
+    "cosine": True,
+    "euclidean": False,
+}
+
+
+class HDIdxException(Exception):
+    """
+    HDIdx Exception
+    """
+
 
 """
 KMeans
@@ -148,3 +163,33 @@ class Profiler(object):
         self.records = {}
         self.name_stack = []
         self.cur_record = None
+
+
+def normalize(feat, ln=2):
+    if ln is 1:
+        return feat / feat.sum(1).reshape(-1, 1)
+    elif ln > 0:
+        return feat / ((feat**ln).sum(1)**(1.0/ln)).reshape(-1, 1)
+    else:
+        raise Exception("Unsupported norm: %d" % ln)
+
+
+def tokey(item):
+    """
+    Key function for sorting filenames
+    """
+    return int(item.split("_")[-1].split(".")[0])
+
+
+class Reader(object):
+    def __init__(self, featdir):
+        self.v_fname = sorted(os.listdir(featdir), key=tokey)
+        self.next_id = 0
+        self.featdir = featdir
+
+    def get_next(self):
+        logging.info("Reader - load %d" % self.next_id)
+        feat = loadmat(
+            os.path.join(self.featdir, self.v_fname[self.next_id]))['feat']
+        self.next_id += 1
+        return feat
