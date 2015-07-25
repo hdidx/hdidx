@@ -6,3 +6,7 @@ dist/
 build/
 hdidx.egg-info/
 cext/_cext.c
+
+temp/
+.idea/
+.ipynb_checkpoints/

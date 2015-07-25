@@ -25,7 +25,7 @@ import numpy
 from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.0.13',
+      version='0.0.14',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'hdidx'},
@@ -42,8 +42,8 @@ setup(name='hdidx',
       scripts=[
           'tests/test_indexer.py',
           'tests/test_cext.py',
-          'tools/hdidx_build.py',
-          'tools/hdidx_index.py',
+          'tools/hdidx_build',
+          'tools/hdidx_index',
       ],
       url='https://github.com/wanji/hdidx',
       # license='LICENSE.txt',
