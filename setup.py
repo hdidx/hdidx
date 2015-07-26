@@ -29,7 +29,11 @@ setup(name='hdidx',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'hdidx'},
-      packages=['hdidx'],
+      packages=[
+          'hdidx',
+          'hdidx.indexer',
+          'hdidx.storage',
+      ],
 
       cmdclass={'build_ext': build_ext},
       ext_modules=[Extension("hdidx._cext",

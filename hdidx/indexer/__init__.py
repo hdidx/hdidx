@@ -19,11 +19,11 @@ import time
 
 import numpy as np
 
-from util import kmeans, pq_kmeans_assign, pq_knn, Profiler
-from distance import distFunc
-from storage import createStorage
+from hdidx.util import kmeans, pq_kmeans_assign, pq_knn, Profiler
+from hdidx.distance import distFunc
+from hdidx.storage import createStorage
 
-import _cext as cext
+import hdidx._cext as cext
 
 
 class Indexer(object):
