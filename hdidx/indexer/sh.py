@@ -10,7 +10,6 @@
 DESCRIPTION = """
 """
 
-import ctypes
 import logging
 
 import numpy as np
@@ -20,8 +19,6 @@ from hdidx.util import Profiler, eigs, pq_knn
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext
-
-bitsop = ctypes.cdll.LoadLibrary('bitsop.so')
 
 BIT_CNT_MAP = np.array([bin(i).count("1") for i in xrange(256)], np.uint16)
 
@@ -189,11 +186,6 @@ class SHIndexer(Indexer):
 
         Dh = np.zeros((npt1, npt2), np.uint16)
 
-        """
-        for i in xrange(npt2):
-            Dh[:, i] = BIT_CNT_MAP[np.bitwise_xor(B1, B2[i, :])].sum(1)
-        """
-
         for i in xrange(npt1):
             Dh[i, :] = BIT_CNT_MAP[np.bitwise_xor(B1[i, :], B2)].sum(1)
 
@@ -236,19 +228,7 @@ class SHIndexer(Indexer):
         if dim1 != dim2:
             raise Exception("Dimension not consists: %d, %d" % (dim1, dim2))
 
-        Dh = np.zeros((npt1, npt2), np.uint16)
-
-        """
-        for i in xrange(npt2):
-            Dh[:, i] = BIT_CNT_MAP[np.bitwise_xor(B1, B2[i, :])].sum(1)
-        """
-
-        for i in xrange(npt1):
-            bitsop.hamming(
-                B2.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
-                B1[i, :].ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
-                dim1, npt2,
-                Dh[i, :].ctypes.data_as(ctypes.POINTER(ctypes.c_uint16)))
+        Dh = cext.hamming(B1, B2)
 
         return Dh
 

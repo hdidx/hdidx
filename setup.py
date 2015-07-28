@@ -16,10 +16,15 @@ except ImportError:
 
 try:
     from pypandoc import convert
-    read_md = lambda f: convert(f, 'rst')
+
+    def read_md(fpath):
+        return convert(fpath, 'rst')
 except ImportError:
     print "warning: pypandoc module not found, DONOT convert Markdown to RST"
-    read_md = lambda f: open(f, 'r').read()
+
+    def read_md(fpath):
+        with open(fpath, 'r') as fp:
+            return fp.read()
 
 import numpy
 from Cython.Distutils import build_ext
@@ -36,12 +41,13 @@ setup(name='hdidx',
       ],
 
       cmdclass={'build_ext': build_ext},
-      ext_modules=[Extension("hdidx._cext",
-                             sources=[
-                                 "cext/_cext.pyx",
-                                 "cext/cext.c",
-                             ],
-                             include_dirs=[numpy.get_include(), "cext"])],
+      ext_modules=[Extension(
+          "hdidx._cext",
+          sources=[
+              "cext/_cext.pyx",
+              "cext/cext.c",
+          ],
+          include_dirs=[numpy.get_include(), "cext"])],
 
       scripts=[
           'tests/test_indexer.py',
