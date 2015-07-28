@@ -256,6 +256,87 @@ class TestPQNew(unittest.TestCase):
         compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
 
+class TestSH(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    @classmethod
+    def setUpClass(cls):
+        cls.vtrain, cls.vbase, cls.vquery, cls.ids_gnd = \
+            create_random_data()
+        cls.nbits = 64
+        cls.topk = 100
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def test_sh_lmdb_0_build_save_add_search(self):
+        """ Test PQ: LMDB storage
+                from scratch
+        """
+        idx = indexer.SHIndexer()
+        idx.build({
+            'vals': self.vtrain,
+            'nbits': self.nbits,
+        })
+        idx.save('/tmp/hdidx_test_sh_lmdb.info')
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_sh_lmdb.idx',
+            'clear': True,
+        })
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_sh_lmdb_1_SKIP_load_add_search(self):
+        """ Test PQ: LMDB storage
+                load pre-computed quantizers from disk file
+        """
+        idx = indexer.SHIndexer()
+        idx.load('/tmp/hdidx_test_sh_lmdb.info')
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_sh_lmdb.idx',
+            'clear': True,
+        })
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_sh_lmdb_2_SKIP_load_SKIP_search(self):
+        """ Test PQ: LMDB storage
+                1. load pre-computed quantizers from disk file
+                2. load indices from LMDB
+        """
+        idx = indexer.SHIndexer()
+        idx.load('/tmp/hdidx_test_sh_lmdb.info')
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_sh_lmdb.idx',
+            'clear': False,
+        })
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+    def test_sh_mem(self):
+        """ Test PQ: memory storage
+                from scratch
+        """
+        idx = indexer.SHIndexer()
+        idx.build({
+            'vals': self.vtrain,
+            'nbits': self.nbits,
+        })
+        idx.save('/tmp/hdidx_test_mem.info')
+        idx.set_storage('mem')
+
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+
+
 if __name__ == '__main__':
     logging.warn("The results of mem storage and lmdb storage might be " +
                  "different even if the database and queries are exactly " +

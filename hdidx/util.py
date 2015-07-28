@@ -19,6 +19,7 @@ import logging
 from distance import distFunc
 import bottleneck
 from scipy.io import loadmat
+import numpy as np
 
 # profiling
 import time
@@ -34,6 +35,17 @@ class HDIdxException(Exception):
     """
     HDIdx Exception
     """
+
+
+"""
+Math
+"""
+
+
+def eigs(X, npca):
+    l, pc = np.linalg.eig(X)
+    idx = l.argsort()[::-1][:npca]
+    return pc[:, idx], l[idx]
 
 
 """

@@ -74,3 +74,4 @@ class Indexer(object):
         raise Exception(self.ERR_INSTAN)
 
 from pq import PQIndexer, IVFPQIndexer
+from sh import SHIndexer
