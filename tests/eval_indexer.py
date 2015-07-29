@@ -59,11 +59,16 @@ class Dataset(object):
             if not key.startswith("__"):
                 setattr(self, key, val.T)
         self.groundtruth = self.groundtruth[:, :1]
+        self.nlrn = self.learn.shape[0]
+        self.nbae = self.base.shape[0]
+        self.nqry = self.query.shape[0]
+        self.name = data_path.split("/")[-1].split(".")[0]
 
 
-def compute_stats(nquery, ids_gnd, ids_qry, k):
+def compute_stats(ids_gnd, ids_qry, k):
+    nquery = ids_qry.shape[0]
     nn_ranks_pqc = np.zeros(nquery)
-    for i in range(nquery):
+    for i in xrange(nquery):
         ret_lst = ids_qry[i, :].tolist()
         nn_pos = []
         for gnd_id in ids_gnd[i, :]:
@@ -90,12 +95,41 @@ def compute_stats(nquery, ids_gnd, ids_qry, k):
     return v_recall
 
 
-def eval_indexer(data, indexer_param, dsname, topk):
-    ntri = data.learn.shape[0]
-    nbae = data.base.shape[0]
-    nqry = data.query.shape[0]
-    logging.info("learn/base/query: %d/%d/%d" % (ntri, nbae, nqry))
+BLOCK_SIZE = 1000
 
+
+def save_result(rslt_path, ids, dis):
+    nret = ids.shape[1]
+    if nret > BLOCK_SIZE:
+        os.makedirs(rslt_path)
+        for i in xrange(0, nret, BLOCK_SIZE):
+            savemat(os.path.join(rslt_path, "%d.mat" % i),
+                    {'ids': ids[:, i:i+BLOCK_SIZE],
+                     'dis': dis[:, i:i+BLOCK_SIZE]})
+    else:
+        savemat(rslt_path, {'ids': ids, 'dis': dis})
+
+
+def load_result(rslt_path):
+    if os.path.isdir(rslt_path):
+        v_ids = []
+        v_dis = []
+        files = sorted([rslt_file for rslt_file in os.listdir(rslt_path)
+                        if rslt_file.endseith(".mat")],
+                       key=lambda x: int(x.split(".")[0]))
+        for rslt_file in files:
+            rslt = loadmat(rslt_path)
+            v_ids.append(rslt['ids'])
+            v_dis.append(rslt['dis'])
+        return np.hstack(v_ids), np.hstack(v_dis)
+    else:
+        rslt = loadmat(rslt_path)
+        ids = rslt['ids']
+        dis = rslt['dis']
+    return ids, dis
+
+
+def eval_indexer(data, indexer_param, dsname, topk):
     CurIndexer = indexer_param['indexer']
     build_param = indexer_param['build_param']
     index_prefix = indexer_param['index_prefix']
@@ -123,16 +157,14 @@ def eval_indexer(data, indexer_param, dsname, topk):
 
     if os.path.exists(rslt_path):
         logging.info("Loading saved retrieval results ...")
-        rslt = loadmat(rslt_path)
-        ids = rslt['ids']
-        dis = rslt['dis']
+        ids, dis = load_result(rslt_path)
         logging.info("\tDone!")
     else:
         logging.info("Searching ...")
         ids, dis = idx.search(data.query, topk=topk)
-        savemat(rslt_path, {'ids': ids, 'dis': dis})
+        save_result(rslt_path, ids, dis)
         logging.info("\tDone!")
-    return compute_stats(nqry, data.groundtruth, ids, topk)
+    return compute_stats(data.groundtruth, ids, topk)
 
 
 def main(args):
@@ -154,7 +186,8 @@ def main(args):
         rptf.write("*" * 64 + "\n")
 
     data = Dataset(args.dataset)
-    dsname = args.dataset.split("/")[-1].split(".")[0]
+    logging.info("learn/base/query: %d/%d/%d" %
+                 (data.nlrn, data.nbae, data.nqry))
 
     for nbits in args.nbits:
         if nbits % 8 != 0:
@@ -168,7 +201,7 @@ def main(args):
                     'nsubqbits': 8,
                 },
                 'index_prefix': '%s/%s_%s_nsubq%d' % (
-                    exp_dir, dsname, 'pq', nsubq),
+                    exp_dir, data.name, 'pq', nsubq),
             },
             {
                 'indexer': indexer.SHIndexer,
@@ -176,12 +209,12 @@ def main(args):
                     'nbits': nbits,
                 },
                 'index_prefix': '%s/%s_%s_nbits%d' % (
-                    exp_dir, dsname, 'sh', nbits),
+                    exp_dir, data.name, 'sh', nbits),
             },
         ]
 
         for indexer_param in v_indexer_param:
-            v_recall = eval_indexer(data, indexer_param, dsname, args.topk)
+            v_recall = eval_indexer(data, indexer_param, data.name, args.topk)
             with open(report, "a") as rptf:
                 rptf.write("=" * 64 + "\n")
                 rptf.write(str(indexer_param) + "\n")
