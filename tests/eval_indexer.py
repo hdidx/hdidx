@@ -17,7 +17,7 @@ import time
 import tempfile
 
 import numpy as np
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 from hdidx import indexer
 from hdidx import util
@@ -80,7 +80,8 @@ def compute_stats(nquery, ids_gnd, ids_qry, k):
     nn_ranks_pqc.sort()
 
     v_recall = []
-    for i in [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000]:
+    for i in [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000,
+              10000, 20000, 50000, 100000, 200000, 500000, 1000000]:
         if i > k:
             break
         r_at_i = (nn_ranks_pqc < i).sum().astype(np.float) / nquery
@@ -89,7 +90,7 @@ def compute_stats(nquery, ids_gnd, ids_qry, k):
     return v_recall
 
 
-def eval_indexer(data, indexer_param, dsname):
+def eval_indexer(data, indexer_param, dsname, topk):
     ntri = data.learn.shape[0]
     nbae = data.base.shape[0]
     nqry = data.query.shape[0]
@@ -100,6 +101,7 @@ def eval_indexer(data, indexer_param, dsname):
     index_prefix = indexer_param['index_prefix']
     info_path = index_prefix + ".info"
     lmdb_path = index_prefix + ".idx"
+    rslt_path = index_prefix + "-result.mat"
 
     build_param['vals'] = data.learn
 
@@ -118,8 +120,19 @@ def eval_indexer(data, indexer_param, dsname):
     })
     if do_add:
         idx.add(data.base)
-    ids, dis = idx.search(data.query, topk=args.topk)
-    return compute_stats(nqry, data.groundtruth, ids, args.topk)
+
+    if os.path.exists(rslt_path):
+        logging.info("Loading saved retrieval results ...")
+        rslt = loadmat(rslt_path)
+        ids = rslt['ids']
+        dis = rslt['dis']
+        logging.info("\tDone!")
+    else:
+        logging.info("Searching ...")
+        ids, dis = idx.search(data.query, topk=topk)
+        savemat(rslt_path, {'ids': ids, 'dis': dis})
+        logging.info("\tDone!")
+    return compute_stats(nqry, data.groundtruth, ids, topk)
 
 
 def main(args):
@@ -168,7 +181,7 @@ def main(args):
         ]
 
         for indexer_param in v_indexer_param:
-            v_recall = eval_indexer(data, indexer_param, dsname)
+            v_recall = eval_indexer(data, indexer_param, dsname, args.topk)
             with open(report, "a") as rptf:
                 rptf.write("=" * 64 + "\n")
                 rptf.write(str(indexer_param) + "\n")
