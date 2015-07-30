@@ -115,10 +115,10 @@ def load_result(rslt_path):
         v_ids = []
         v_dis = []
         files = sorted([rslt_file for rslt_file in os.listdir(rslt_path)
-                        if rslt_file.endseith(".mat")],
+                        if rslt_file.endswith(".mat")],
                        key=lambda x: int(x.split(".")[0]))
         for rslt_file in files:
-            rslt = loadmat(rslt_path)
+            rslt = loadmat(os.path.join(rslt_path, rslt_file))
             v_ids.append(rslt['ids'])
             v_dis.append(rslt['dis'])
         return np.hstack(v_ids), np.hstack(v_dis)
@@ -217,7 +217,9 @@ def main(args):
             v_recall = eval_indexer(data, indexer_param, data.name, args.topk)
             with open(report, "a") as rptf:
                 rptf.write("=" * 64 + "\n")
-                rptf.write(str(indexer_param) + "\n")
+                # rptf.write(str(indexer_param) + "\n")
+                rptf.write("index_%s-nbits_%s\n" % (
+                    indexer_param['indexer'].__name__, nbits))
                 rptf.write("-" * 64 + "\n")
                 for recall in v_recall:
                     rptf.write("recall@%-8d%.4f\n" % (recall[0], recall[1]))
