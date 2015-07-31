@@ -137,6 +137,11 @@ def eval_indexer(data, indexer_param, dsname, topk):
     lmdb_path = index_prefix + ".idx"
     rslt_path = index_prefix + "-top%d.mat" % topk
 
+    logging.info("Start evaluating `%s`:" % CurIndexer.__name__)
+    nbits = build_param['nbits'] if 'nbits' in build_param \
+        else build_param['nsubq'] * 8
+    logging.info("\tnumber of bits: %d" % nbits)
+
     build_param['vals'] = data.learn
 
     idx = CurIndexer()
@@ -195,6 +200,14 @@ def main(args):
         nsubq = nbits / 8
         v_indexer_param = [
             {
+                'indexer': indexer.SHIndexer,
+                'build_param': {
+                    'nbits': nbits,
+                },
+                'index_prefix': '%s/%s_%s_nbits%d' % (
+                    exp_dir, data.name, 'sh', nbits),
+            },
+            {
                 'indexer': indexer.PQIndexer,
                 'build_param': {
                     'nsubq': nsubq,
@@ -202,14 +215,6 @@ def main(args):
                 },
                 'index_prefix': '%s/%s_%s_nsubq%d' % (
                     exp_dir, data.name, 'pq', nsubq),
-            },
-            {
-                'indexer': indexer.SHIndexer,
-                'build_param': {
-                    'nbits': nbits,
-                },
-                'index_prefix': '%s/%s_%s_nbits%d' % (
-                    exp_dir, data.name, 'sh', nbits),
             },
         ]
 
