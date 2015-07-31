@@ -56,7 +56,7 @@ setup(name='hdidx',
           'tools/hdidx_index',
       ],
       url='https://github.com/wanji/hdidx',
-      # license='LICENSE.txt',
+      license='LICENSE.md',
       description='ANN Search in High-Dimensional Spaces',
 
       long_description=read_md("DESC.md"),

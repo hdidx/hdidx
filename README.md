@@ -6,7 +6,7 @@
 The current version implements following seacrching algorithms: 
 
 - `Product Quantization`[1].
-- `Spectral Hashing`[1].
+- `Spectral Hashing`[2].
 
 ## Installation
 
