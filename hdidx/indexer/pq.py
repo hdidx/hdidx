@@ -16,6 +16,7 @@ import logging
 import numpy as np
 
 from hdidx.indexer import Indexer
+from hdidx.encoder import PQEncoder
 from hdidx.util import kmeans, pq_kmeans_assign, pq_knn, Profiler
 from hdidx.distance import distFunc
 from hdidx.storage import createStorage
@@ -26,47 +27,14 @@ import hdidx._cext as cext
 class PQIndexer(Indexer):
     def __init__(self):
         Indexer.__init__(self)
+        self.encoder = PQEncoder()
         self.set_storage()
 
     def __del__(self):
         pass
 
     def build(self, pardic=None):
-        # training data
-        vals = pardic['vals']
-        # the number of subquantizers
-        nsubq = pardic['nsubq']
-        # the number bits of each subquantizer
-        nsubqbits = pardic.get('nsubqbits', 8)
-        # the number of items in one block
-        blksize = pardic.get('blksize', 16384)
-
-        # vector dimension
-        dim = vals.shape[1]
-        # dimension of the subvectors to quantize
-        dsub = dim / nsubq
-        # number of centroids per subquantizer
-        ksub = 2 ** nsubqbits
-
-        """
-        Initializing indexer data
-        """
-        idxdat = dict()
-        idxdat['nsubq'] = nsubq
-        idxdat['ksub'] = ksub
-        idxdat['dsub'] = dsub
-        idxdat['blksize'] = blksize
-        idxdat['centroids'] = [None for q in range(nsubq)]
-
-        logging.info("Building codebooks in subspaces - BEGIN")
-        for q in range(nsubq):
-            logging.info("\tsubspace %d/%d:" % (q, nsubq))
-            vs = np.require(vals[:, q*dsub:(q+1)*dsub],
-                            requirements='C', dtype=np.float32)
-            idxdat['centroids'][q] = kmeans(vs, ksub, niter=100)
-        logging.info("Building codebooks in subspaces - DONE")
-
-        self.idxdat = idxdat
+        self.encoder.build(pardic)
 
     def set_storage(self, storage_type='mem', storage_parm=None):
         self.storage = createStorage(storage_type, storage_parm)
@@ -80,20 +48,12 @@ class PQIndexer(Indexer):
         else:
             keys = np.array(keys, dtype=np.int32).reshape(-1)
 
-        dsub = self.idxdat['dsub']
-        nsubq = self.idxdat['nsubq']
-        centroids = self.idxdat['centroids']
-
-        blksize = self.idxdat.get('blksize', 16384)
         start_id = 0
-        for start_id in range(0, num_vals, blksize):
-            cur_num = min(blksize, num_vals - start_id)
+        for start_id in range(0, num_vals, self.BLKSIZE):
+            cur_num = min(self.BLKSIZE, num_vals - start_id)
             logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
 
-            codes = np.zeros((cur_num, nsubq), np.uint8)
-            for q in range(nsubq):
-                vsub = vals[start_id:start_id+cur_num, q*dsub:(q+1)*dsub]
-                codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
+            codes = self.encoder.encode(vals[start_id:start_id+cur_num])
             self.storage.add(codes, keys[start_id:start_id+cur_num])
 
     def remove(self, keys):
@@ -102,10 +62,10 @@ class PQIndexer(Indexer):
     def search(self, queries, topk=None, thresh=None):
         nq = queries.shape[0]
 
-        dsub = self.idxdat['dsub']
-        nsubq = self.idxdat['nsubq']
-        ksub = self.idxdat['ksub']
-        centroids = self.idxdat['centroids']
+        dsub = self.encoder.ecdat['dsub']
+        nsubq = self.encoder.ecdat['nsubq']
+        ksub = self.encoder.ecdat['ksub']
+        centroids = self.encoder.ecdat['centroids']
 
         distab = np.zeros((nsubq, ksub), np.single)
         dis = np.ones((nq, topk), np.single) * np.inf
@@ -231,10 +191,9 @@ class IVFPQIndexer(PQIndexer):
         coarsek = self.idxdat['coarsek']
         coa_centroids = self.idxdat['coa_centroids']
 
-        blksize = self.idxdat.get('blksize', 16384)
         start_id = 0
-        for start_id in range(0, num_vals, blksize):
-            cur_num = min(blksize, num_vals - start_id)
+        for start_id in range(0, num_vals, self.BLKSIZE):
+            cur_num = min(self.BLKSIZE, num_vals - start_id)
             end_id = start_id + cur_num
             logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
 

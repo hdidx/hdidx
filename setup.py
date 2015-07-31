@@ -37,6 +37,7 @@ setup(name='hdidx',
       packages=[
           'hdidx',
           'hdidx.indexer',
+          'hdidx.encoder',
           'hdidx.storage',
       ],
 

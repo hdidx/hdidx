@@ -84,7 +84,7 @@ def compute_stats(nquery, ids_gnd, ids_pqc, k):
         if i > k:
             break
         r_at_i = (nn_ranks_pqc < i).sum() * 100.0 / nquery
-        logging.warning('\rr@%3d = %.3f' % (i, r_at_i))
+        logging.warning('\rr@%-3d = %.3f' % (i, r_at_i))
 
 
 class TestPQNew(unittest.TestCase):
