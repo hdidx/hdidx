@@ -77,3 +77,31 @@ void sumidxtab_core_cfunc(const float * D, const uint8_t * blk,
     }
   }
 }
+
+/**
+ * kNN for Hamming distance based on counting sort.
+ */
+void knn_count_core_cfunc(const uint16_t * D, int numD, int maxD,
+    int topk, int32_t * out) {
+  int * counter = (int *)malloc((maxD + 1) * sizeof(counter[0]));
+  int * v_pos = (int *)malloc((maxD + 1) * sizeof(counter[0]));
+  memset(counter, 0, (maxD + 1) * sizeof(counter[0]));
+  int i, pos;
+  for (i=0; i<numD; i++) {
+    counter[D[i]]++;
+  }
+  v_pos[0] = 0;
+  for (i=0; i<maxD; i++) {
+    v_pos[i+1] = v_pos[i] + counter[i];
+  }
+  for (i=0; i<numD; i++) {
+    pos = v_pos[D[i]];
+    if (pos >= topk) {
+      continue;
+    }
+    out[pos] = i;
+    v_pos[D[i]]++;
+  }
+  free(counter);
+  free(v_pos);
+}

@@ -135,7 +135,7 @@ def eval_indexer(data, indexer_param, dsname, topk):
     index_prefix = indexer_param['index_prefix']
     info_path = index_prefix + ".info"
     lmdb_path = index_prefix + ".idx"
-    rslt_path = index_prefix + "-result.mat"
+    rslt_path = index_prefix + "-top%d.mat" % topk
 
     build_param['vals'] = data.learn
 

@@ -2,8 +2,11 @@
 
 ## What is `HDIdx`?
 
-`HDIdx` is a python package for indexing high-dimensional data.
-The current version implements the `Product Quantization` described in [1].
+`HDIdx` is a python package for approximate nearest neighbor (ANN) search in high-dimensional space.
+The current version implements following seacrching algorithms: 
+
+- `Product Quantization`[1].
+- `Spectral Hashing`[1].
 
 ## Installation
 
@@ -54,4 +57,7 @@ idx.search(X_qry, 100)
 [1] Jegou, Herve, Matthijs Douze, and Cordelia Schmid.
     "Product quantization for nearest neighbor search."
     Pattern Analysis and Machine Intelligence, IEEE Transactions on 33.1 (2011): 117-128.
+[2] Weiss, Yair, Antonio Torralba, and Rob Fergus.
+    "Spectral hashing."
+    In Advances in neural information processing systems, pp. 1753-1760. 2009.
 ```

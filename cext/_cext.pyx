@@ -26,6 +26,8 @@ cdef extern from "cext.h":
         int nsq, int ksub, int cur_num, cnp.float32_t * out)
     void hamming_core_cfunc(cnp.uint8_t * db, cnp.uint8_t * qry, int dim, int num,
                             cnp.uint16_t * dist)
+    void knn_count_core_cfunc(cnp.uint16_t * D, int numD, int maxD,
+                              int topk, cnp.int32_t * out);
 
 # create the wrapper code, with numpy type annotations
 def sumidxtab_core(cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] D not None,
@@ -52,4 +54,16 @@ def hamming(cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] Q not None,
                            <cnp.uint8_t*> cnp.PyArray_DATA(D),
                            dq, nd,
                            <cnp.uint16_t*> cnp.PyArray_DATA(out[i, :]))
+    return out
+
+def knn_count(cnp.ndarray[cnp.uint16_t, ndim=1, mode="c"] D not None,
+              int maxD, int topk):
+    """
+    Return topk by counting sort
+    """
+    out = np.zeros(topk, dtype=np.int32)
+    numD = D.shape[0]
+    knn_count_core_cfunc(<cnp.uint16_t*> cnp.PyArray_DATA(D),
+                         D.shape[0], maxD, topk,
+                         <cnp.int32_t*> cnp.PyArray_DATA(out))
     return out

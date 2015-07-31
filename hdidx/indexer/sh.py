@@ -234,6 +234,7 @@ class SHIndexer(Indexer):
 
     def search(self, queries, topk=None, thresh=None):
         nq = queries.shape[0]
+        nbits = self.idxdat['nbits']
 
         qry_codes = self.compressSH(queries)
         db_codes = self.storage.get_codes()
@@ -253,7 +254,7 @@ class SHIndexer(Indexer):
             profiler.end()
 
             profiler.start("knn")       # time for finding the kNN
-            cur_ids = pq_knn(disquerybase, topk)
+            cur_ids = cext.knn_count(disquerybase, nbits, topk)
             profiler.end()
 
             profiler.start("result")    # time for getting final result
