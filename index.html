@@ -25,8 +25,15 @@
 <h2>
 <a id="what-is-hdidx" class="anchor" href="#what-is-hdidx" aria-hidden="true"><span class="octicon octicon-link"></span></a>What is <code>HDIdx</code>?</h2>
 
-<p><code>HDIdx</code> is a python package for indexing high-dimensional data.
-The current version implements the <code>Product Quantization</code> described in [1].</p>
+<p><code>HDIdx</code> is a python package for approximate nearest neighbor (ANN) search in high-dimensional space.
+The current version implements following seacrching algorithms: </p>
+
+<ul>
+<li>
+<code>Product Quantization</code>[1].</li>
+<li>
+<code>Spectral Hashing</code>[2].</li>
+</ul>
 
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
@@ -74,6 +81,9 @@ idx.search(X_qry, <span class="pl-c1">100</span>)</pre></div>
 <pre><code>[1] Jegou, Herve, Matthijs Douze, and Cordelia Schmid.
     "Product quantization for nearest neighbor search."
     Pattern Analysis and Machine Intelligence, IEEE Transactions on 33.1 (2011): 117-128.
+[2] Weiss, Yair, Antonio Torralba, and Rob Fergus.
+    "Spectral hashing."
+    In Advances in neural information processing systems, pp. 1753-1760. 2009.
 </code></pre>
 
       <footer class="site-footer">
