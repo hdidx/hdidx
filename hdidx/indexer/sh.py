@@ -15,7 +15,7 @@ import logging
 import numpy as np
 
 from hdidx.indexer import Indexer
-from hdidx.util import Profiler, eigs, pq_knn
+from hdidx.util import Profiler, eigs
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext
@@ -236,7 +236,7 @@ class SHIndexer(Indexer):
         nq = queries.shape[0]
         nbits = self.idxdat['nbits']
 
-        qry_codes = self.compressSH(queries)
+        # qry_codes = self.compressSH(queries)
         db_codes = self.storage.get_codes()
         idsquerybase = self.storage.get_keys()
 
@@ -248,9 +248,12 @@ class SHIndexer(Indexer):
         time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
         for qry_id in range(nq):
+            profiler.start("encoding")  # time for computing the distances
+            qry_code = self.compressSH(queries[qry_id:qry_id+1])
+            profiler.end()
+
             profiler.start("distance")  # time for computing the distances
-            disquerybase = self.hammingDist2(qry_codes[qry_id:qry_id+1],
-                                             db_codes).reshape(-1)
+            disquerybase = self.hammingDist2(qry_code, db_codes).reshape(-1)
             profiler.end()
 
             profiler.start("knn")       # time for finding the kNN
@@ -274,38 +277,3 @@ class SHIndexer(Indexer):
         logging.info("Average querying time: %.4f" % (time_total / nq))
 
         return ids, dis
-
-    def sumidxtab(self, D):
-        """
-        Compute distance to database items based on distances to centroids.
-            D: nsubq x ksub
-        """
-
-        ids = self.storage.get_keys()
-        dis = cext.sumidxtab_core(D, self.storage.get_codes())
-
-        return np.array(ids), np.array(dis)
-
-        """
-        Deprecated code
-        """
-        # num_base_items = self.storage.get_num_items()
-
-        # dis = np.zeros(num_base_items)
-        # ids = np.arange(0)
-
-        # start_id = 0
-        # for keys, blk in self.storage:
-        #     cur_num = blk.shape[0]
-        #     # dis[start_id:start_id+cur_num] = self.sumidxtab_core(D, blk)
-        #     dis[start_id:start_id+cur_num] = cext.sumidxtab_core(D, blk)
-        #     start_id += cur_num
-        #     ids = np.hstack((ids, keys))
-
-        # return ids, dis
-
-    @classmethod
-    def sumidxtab_core(cls, D, blk):
-        # return 0
-        return [sum([D[j, blk[i, j]] for j in range(D.shape[0])])
-                for i in range(blk.shape[0])]

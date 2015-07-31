@@ -101,7 +101,8 @@ BLOCK_SIZE = 1000
 def save_result(rslt_path, ids, dis):
     nret = ids.shape[1]
     if nret > BLOCK_SIZE:
-        os.makedirs(rslt_path)
+        if not os.path.exists(rslt_path):
+            os.makedirs(rslt_path)
         for i in xrange(0, nret, BLOCK_SIZE):
             savemat(os.path.join(rslt_path, "%d.mat" % i),
                     {'ids': ids[:, i:i+BLOCK_SIZE],
@@ -160,16 +161,19 @@ def eval_indexer(data, indexer_param, dsname, topk):
     if do_add:
         idx.add(data.base)
 
-    if os.path.exists(rslt_path):
+    if False and os.path.exists(rslt_path):
         logging.info("Loading saved retrieval results ...")
         ids, dis = load_result(rslt_path)
         logging.info("\tDone!")
+        toc = 0
     else:
         logging.info("Searching ...")
+        tic = time.time()
         ids, dis = idx.search(data.query, topk=topk)
+        toc = time.time() - tic
         save_result(rslt_path, ids, dis)
         logging.info("\tDone!")
-    return compute_stats(data.groundtruth, ids, topk)
+    return compute_stats(data.groundtruth, ids, topk), toc
 
 
 def main(args):
@@ -219,7 +223,8 @@ def main(args):
         ]
 
         for indexer_param in v_indexer_param:
-            v_recall = eval_indexer(data, indexer_param, data.name, args.topk)
+            v_recall, time_cost = eval_indexer(data, indexer_param,
+                                               data.name, args.topk)
             with open(report, "a") as rptf:
                 rptf.write("=" * 64 + "\n")
                 # rptf.write(str(indexer_param) + "\n")
@@ -228,6 +233,8 @@ def main(args):
                 rptf.write("-" * 64 + "\n")
                 for recall in v_recall:
                     rptf.write("recall@%-8d%.4f\n" % (recall[0], recall[1]))
+                rptf.write("time cost (ms): %.3f\n" %
+                           (time_cost * 1000 / data.nqry))
     logging.info("All done! You can check the report in: %s" % report)
 
 if __name__ == '__main__':
