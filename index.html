@@ -20,13 +20,21 @@
 
     <section class="main-content">
       <h1>
-<a id="hdidx-indexing-high-dimensional-data" class="anchor" href="#hdidx-indexing-high-dimensional-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>HDIdx: Indexing High-Dimensional Data</h1>
+<a id="hdidx-indexing-high-dimensional-data" class="anchor" href="#hdidx-indexing-high-dimensional-data" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>HDIdx</strong>: Indexing High-Dimensional Data</h1>
 
 <h2>
-<a id="what-is-hdidx" class="anchor" href="#what-is-hdidx" aria-hidden="true"><span class="octicon octicon-link"></span></a>What is <code>HDIdx</code>?</h2>
+<a id="what-is-hdidx" class="anchor" href="#what-is-hdidx" aria-hidden="true"><span class="octicon octicon-link"></span></a>What is <strong>HDIdx</strong>?</h2>
 
-<p><code>HDIdx</code> is a python package for approximate nearest neighbor (ANN) search in high-dimensional space.
-The current version implements following seacrching algorithms: </p>
+<p><strong>HDIdx</strong> is a python package for approximate nearest neighbor (ANN) search. Nearest neighbor (NN) search is very challenging in high-dimensional space because of the <a href="https://en.wikipedia.org/wiki/Curse_of_dimensionality"><em>Curse of Dimensionality</em></a> problem. The basic idea of <strong>HDIdx</strong> is to compress the original feature vectors into compact binary codes, and perform approximate NN search instead of extract NN search. This can largely reduce the storage requirements and can significantly speed up the search.</p>
+
+<h2>
+<a id="architecture" class="anchor" href="#architecture" aria-hidden="true"><span class="octicon octicon-link"></span></a>Architecture</h2>
+
+<p><img src="https://raw.githubusercontent.com/wanji/hdidx/master/doc/framework.png" alt="Framework"></p>
+
+<p><strong>HDIdx</strong> has three main modules: 1) <code>Encoder</code> which can compress the original feature vectors into compact binary hash codes, 2) <code>Indexer</code> which can index the database items and search approximate nearest neighbor for a given query item, and 3) <code>Storage</code> module which encapsulates the underlying data storage, which can be memory or NoSQL database like LMDB, for the <code>Indexer</code>.</p>
+
+<p>The current version implements following feature compressing algorithms: </p>
 
 <ul>
 <li>
@@ -35,18 +43,22 @@ The current version implements following seacrching algorithms: </p>
 <code>Spectral Hashing</code>[2].</li>
 </ul>
 
+<p>To use HDIdx, first you should learn a <code>Encoder</code> from some learning vectors.
+Then you can map the base vectors into hash codes using the learned <code>Encoder</code> and building indexes over these hash codes by an <code>Indexer</code>, which will write the indexes to the specified storage medium.
+When a query vector comes, it will be mapped to hash codes by the same <code>Encoder</code> and the <code>Indexer</code> will find the similar items to this query vector.</p>
+
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
 
-<p><code>HDIdx</code> can be installed via <code>pip</code>:</p>
+<p><strong>HDIdx</strong> can be installed via <code>pip</code>:</p>
 
 <div class="highlight highlight-bash"><pre>[sudo] pip install hdidx</pre></div>
 
-<p>By default, <code>HDIdx</code> use kmeans algorithm provided by <code>SciPy</code>. To be more efficient, you can instll python extensions provided by <code>OpenCV</code>, which can be installed via <code>apt-get</code> on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.</p>
+<p>By default, <strong>HDIdx</strong> use kmeans algorithm provided by <em>SciPy</em>. To be more efficient, you can install python extensions of <em>OpenCV</em>, which can be installed via <code>apt-get</code> on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.</p>
 
 <div class="highlight highlight-bash"><pre>[sudo] apt-get install python-opencv</pre></div>
 
-<p><code>HDIdx</code> will detect <code>OpenCV</code> automatically and use it if available.</p>
+<p><strong>HDIdx</strong> will use <em>OpenCV</em> automatically if it is available.</p>
 
 <h2>
 <a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
