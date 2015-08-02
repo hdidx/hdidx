@@ -1,28 +1,34 @@
-# HDIdx: Indexing High-Dimensional Data
+# **HDIdx**: Indexing High-Dimensional Data
 
-## What is `HDIdx`?
+## What is **HDIdx**?
 
-`HDIdx` is a python package for approximate nearest neighbor (ANN) search in high-dimensional space.
-The current version implements following seacrching algorithms: 
+**HDIdx** is a python package for approximate nearest neighbor (ANN) search. Nearest neighbor (NN) search is very challenging in high-dimensional space because of the [*Curse of Dimensionality*](https://en.wikipedia.org/wiki/Curse_of_dimensionality) problem. The basic idea of **HDIdx** is to compress the original feature vectors into compact binary codes, and perform approximate NN search instead of extract NN search. This can largely reduce the storage requirements and can significantly speed up the search.
+
+## Architecture
+
+
+**HDIdx** has three main modules: 1) `Encoder` which can compress the original feature vectors into compact binary hash codes, 2) `Indexer` which can index the database items and search approximate nearest neighbor for a given query item, and 3) `Storage` module which encapsulates the underlying data storage, which can be memory or NoSQL database like LMDB, for the `Indexer`.
+
+The current version implements following feature compressing algorithms: 
 
 - `Product Quantization`[1].
 - `Spectral Hashing`[2].
 
 ## Installation
 
-`HDIdx` can be installed via `pip`:
+**HDIdx** can be installed via `pip`:
 
 ```bash
 [sudo] pip install hdidx
 ```
 
-By default, `HDIdx` use kmeans algorithm provided by `SciPy`. To be more efficient, you can instll python extensions provided by `OpenCV`, which can be installed via `apt-get` on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.
+By default, **HDIdx** use kmeans algorithm provided by *SciPy*. To be more efficient, you can install python extensions of *OpenCV*, which can be installed via `apt-get` on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.
 
 ```bash
 [sudo] apt-get install python-opencv
 ```
 
-`HDIdx` will detect `OpenCV` automatically and use it if available.
+**HDIdx** will use *OpenCV* automatically if it is available.
 
 ## Example
 
