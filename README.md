@@ -6,6 +6,7 @@
 
 ## Architecture
 
+![Framework](https://raw.githubusercontent.com/wanji/hdidx/master/doc/framework.png)
 
 **HDIdx** has three main modules: 1) `Encoder` which can compress the original feature vectors into compact binary hash codes, 2) `Indexer` which can index the database items and search approximate nearest neighbor for a given query item, and 3) `Storage` module which encapsulates the underlying data storage, which can be memory or NoSQL database like LMDB, for the `Indexer`.
 
@@ -13,6 +14,11 @@ The current version implements following feature compressing algorithms:
 
 - `Product Quantization`[1].
 - `Spectral Hashing`[2].
+
+To use HDIdx, first you should learn a `Encoder` from some learning vectors.
+Then you can map the base vectors into hash codes using the learned `Encoder` and building indexes over these hash codes by an `Indexer`, which will write the indexes to the specified storage medium.
+When a query vector comes, it will be mapped to hash codes by the same `Encoder` and the `Indexer` will find the similar items to this query vector.
+
 
 ## Installation
 
@@ -22,13 +28,13 @@ The current version implements following feature compressing algorithms:
 [sudo] pip install hdidx
 ```
 
-By default, **HDIdx** use kmeans algorithm provided by *SciPy*. To be more efficient, you can install python extensions of *OpenCV*, which can be installed via `apt-get` on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.
+By default, **HDIdx** use kmeans algorithm provided by [*SciPy*](http://www.scipy.org/). To be more efficient, you can install python extensions of [*OpenCV*](http://opencv.org/), which can be installed via `apt-get` on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.
 
 ```bash
 [sudo] apt-get install python-opencv
 ```
 
-**HDIdx** will use *OpenCV* automatically if it is available.
+**HDIdx** will use [*OpenCV*](http://opencv.org/) automatically if it is available.
 
 ## Example
 
