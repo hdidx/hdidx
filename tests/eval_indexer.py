@@ -198,6 +198,7 @@ def main(args):
     logging.info("learn/base/query: %d/%d/%d" %
                  (data.nlrn, data.nbae, data.nqry))
 
+    coarsek = 1024
     for nbits in args.nbits:
         if nbits % 8 != 0:
             raise util.HDIdxException("`nbits` must be multiple of 8")
@@ -219,6 +220,16 @@ def main(args):
                 },
                 'index_prefix': '%s/%s_%s_nsubq%d' % (
                     exp_dir, data.name, 'pq', nsubq),
+            },
+            {
+                'indexer': indexer.IVFPQIndexer,
+                'build_param': {
+                    'nsubq': nsubq,
+                    'nsubqbits': 8,
+                    'coarsek': coarsek,
+                },
+                'index_prefix': '%s/%s_%s_nsubq%d_coarsek%d' % (
+                    exp_dir, data.name, 'ivfpq', nsubq, coarsek),
             },
         ]
 

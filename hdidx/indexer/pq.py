@@ -16,8 +16,8 @@ import logging
 import numpy as np
 
 from hdidx.indexer import Indexer
-from hdidx.encoder import PQEncoder
-from hdidx.util import kmeans, pq_kmeans_assign, pq_knn, Profiler
+from hdidx.encoder import PQEncoder, IVFPQEncoder
+from hdidx.util import pq_knn, Profiler
 from hdidx.distance import distFunc
 from hdidx.storage import createStorage
 
@@ -28,7 +28,7 @@ class PQIndexer(Indexer):
     def __init__(self):
         Indexer.__init__(self)
         self.encoder = PQEncoder()
-        self.set_storage()
+        self.storage = None
 
     def __del__(self):
         pass
@@ -40,6 +40,9 @@ class PQIndexer(Indexer):
         self.storage = createStorage(storage_type, storage_parm)
 
     def add(self, vals, keys=None):
+        if self.storage is None:
+            self.set_storage()
+
         num_vals = vals.shape[0]
         if keys is None:
             num_base_items = self.storage.get_num_items()
@@ -150,33 +153,23 @@ class PQIndexer(Indexer):
 class IVFPQIndexer(PQIndexer):
     def __init__(self):
         PQIndexer.__init__(self)
+        self.encoder = IVFPQEncoder()
+        self.storage = None
 
     def __del__(self):
         pass
 
     def build(self, pardic=None):
-        # training data
-        vals = pardic['vals']
-        # the number of coarse centroids
-        coarsek = pardic['coarsek']
-
-        logging.info('Building coarse quantizer - BEGIN')
-        coa_centroids = kmeans(vals, coarsek, niter=100)
-        cids = pq_kmeans_assign(coa_centroids, vals)
-        logging.info('Building coarse quantizer - DONE')
-
-        pardic['vals'] -= coa_centroids[cids, :]
-
-        PQIndexer.build(self, pardic)
-
-        self.idxdat['coa_centroids'] = coa_centroids
-        self.idxdat['coarsek'] = coarsek
+        self.encoder.build(pardic)
 
     def set_storage(self, storage_type='mem', storage_parm=None):
-        storage_parm['coarsek'] = self.idxdat['coarsek']
+        storage_parm['coarsek'] = self.encoder.ecdat['coarsek']
         self.storage = createStorage(storage_type, storage_parm)
 
     def add(self, vals, keys=None):
+        if self.storage is None:
+            self.set_storage()
+
         num_vals = vals.shape[0]
         if keys is None:
             num_base_items = sum([ivf.get_num_items() for ivf in self.storage])
@@ -185,44 +178,31 @@ class IVFPQIndexer(PQIndexer):
         else:
             keys = np.array(keys, dtype=np.int32).reshape(-1)
 
-        dsub = self.idxdat['dsub']
-        nsubq = self.idxdat['nsubq']
-        centroids = self.idxdat['centroids']
-        coarsek = self.idxdat['coarsek']
-        coa_centroids = self.idxdat['coa_centroids']
-
         start_id = 0
         for start_id in range(0, num_vals, self.BLKSIZE):
             cur_num = min(self.BLKSIZE, num_vals - start_id)
             end_id = start_id + cur_num
             logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
 
-            # Here `copy()` can ensure that you DONOT modify the vals
-            cur_vals = vals[start_id:end_id, :].copy()
-            cur_cids = pq_kmeans_assign(coa_centroids, cur_vals)
-            cur_vals -= coa_centroids[cur_cids, :]
+            cids, codes = self.encoder.encode(vals[start_id:end_id, :])
 
-            codes = np.zeros((cur_num, nsubq), np.uint8)
-            for q in range(nsubq):
-                vsub = cur_vals[:, q*dsub:(q+1)*dsub]
-                codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
-            # self.storage.add(codes, keys)
+            coarsek = self.encoder.ecdat['coarsek']
             for ivfidx in xrange(coarsek):
                 self.storage[ivfidx].add(
-                    codes[cur_cids == ivfidx, :],
-                    keys[start_id:end_id][cur_cids == ivfidx])
+                    codes[cids == ivfidx, :],
+                    keys[start_id:end_id][cids == ivfidx])
 
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=8):
+    def search(self, queries, topk=None, thresh=None, nn_coa=16):
         nq = queries.shape[0]
 
-        dsub = self.idxdat['dsub']
-        nsubq = self.idxdat['nsubq']
-        ksub = self.idxdat['ksub']
-        centroids = self.idxdat['centroids']
-        coa_centroids = self.idxdat['coa_centroids']
+        dsub = self.encoder.ecdat['dsub']
+        nsubq = self.encoder.ecdat['nsubq']
+        ksub = self.encoder.ecdat['ksub']
+        centroids = self.encoder.ecdat['centroids']
+        coa_centroids = self.encoder.ecdat['coa_centroids']
 
         distab = np.zeros((nsubq, ksub), np.single)
         dis = np.ones((nq, topk), np.single) * np.inf

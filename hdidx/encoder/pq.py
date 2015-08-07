@@ -19,8 +19,11 @@ from hdidx.util import kmeans, pq_kmeans_assign
 
 
 class PQEncoder(Encoder):
+    """
+    Product Quantization Encoder
+    """
     def __init__(self):
-        Encoder.__init__(self)
+        super(PQEncoder, self).__init__()
 
     def __del__(self):
         pass
@@ -73,3 +76,43 @@ class PQEncoder(Encoder):
             vsub = vals[:, q*dsub:(q+1)*dsub]
             codes[:, q] = pq_kmeans_assign(centroids[q], vsub)
         return codes
+
+
+class IVFPQEncoder(PQEncoder):
+    """
+    Inverted-File Product Quantization Encoder
+    """
+    def __init__(self):
+        super(IVFPQEncoder, self).__init__()
+
+    def __del__(self):
+        pass
+
+    def build(self, pardic=None):
+        # training data
+        vals = pardic['vals']
+        # the number of coarse centroids
+        coarsek = pardic['coarsek']
+
+        logging.info('Building coarse quantizer - BEGIN')
+        coa_centroids = kmeans(vals, coarsek, niter=100)
+        cids = pq_kmeans_assign(coa_centroids, vals)
+        logging.info('Building coarse quantizer - DONE')
+
+        pardic['vals'] -= coa_centroids[cids, :]
+        super(IVFPQEncoder, self).build(pardic)
+
+        self.ecdat['coa_centroids'] = coa_centroids
+        self.ecdat['coarsek'] = coarsek
+
+    def encode(self, vals):
+        # Here `copy()` can ensure that you DONOT modify the vals
+        vals = vals.copy()
+
+        coa_centroids = self.ecdat['coa_centroids']
+
+        cids = pq_kmeans_assign(coa_centroids, vals)
+        vals -= coa_centroids[cids, :]
+
+        codes = super(IVFPQEncoder, self).encode(vals)
+        return cids, codes

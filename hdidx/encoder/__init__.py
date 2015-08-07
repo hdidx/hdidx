@@ -51,5 +51,5 @@ class Encoder(object):
         """
         raise Exception(self.ERR_INSTAN)
 
-from pq import PQEncoder
+from pq import PQEncoder, IVFPQEncoder
 from sh import SHEncoder
