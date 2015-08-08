@@ -153,19 +153,19 @@ class Profiler(object):
         """
         return sum([rec.average() for name, rec in self.records.iteritems()])
 
-    def str_overall(self, fmt="%s: %.4fs"):
+    def str_overall(self, fmt="%s: %.3fms"):
         """
         Return the overall time costs for each code snippet as string.
         """
 
-        return ";\t".join([fmt % (name, rec.time)
+        return ";\t".join([fmt % (name, rec.time * 1000)
                            for name, rec in self.records.iteritems()])
 
-    def str_average(self, fmt="%s: %.4f"):
+    def str_average(self, fmt="%s: %.3fms"):
         """
         Return the average time costs for each code snippet as string.
         """
-        return ";\t".join([fmt % (name, rec.average())
+        return ";\t".join([fmt % (name, rec.average() * 1000)
                            for name, rec in self.records.iteritems()])
 
     def reset(self):

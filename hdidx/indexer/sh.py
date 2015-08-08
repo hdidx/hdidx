@@ -179,12 +179,12 @@ class SHIndexer(Indexer):
             if (qry_id+1) % interval == 0:
                 time_total += profiler.sum_overall()
                 logging.info(
-                    '\t%d/%d: %.4fs per query' %
-                    (qry_id+1, nq, profiler.sum_average()))
+                    '\t%d/%d: %.3fms per query' %
+                    (qry_id+1, nq, profiler.sum_average() * 1000))
                 logging.info("\t\t%s" % profiler.str_average())
                 profiler.reset()
         logging.info('Querying Finished!')
         time_total += profiler.sum_overall()
-        logging.info("Average querying time: %.4f" % (time_total / nq))
+        logging.info("Average querying time: %.3fms" % (time_total * 1000 / nq))
 
         return ids, dis

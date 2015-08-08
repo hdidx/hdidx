@@ -18,6 +18,7 @@ from hdidx.indexer import Indexer
 from hdidx.encoder import PQEncoder, IVFPQEncoder
 from hdidx.util import pq_knn, Profiler
 from hdidx.distance import distFunc
+from hdidx.distance import euclidean
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext
@@ -104,13 +105,13 @@ class PQIndexer(Indexer):
             if (qry_id+1) % interval == 0:
                 time_total += profiler.sum_overall()
                 logging.info(
-                    '\t%d/%d: %.4fs per query' %
-                    (qry_id+1, nq, profiler.sum_average()))
+                    '\t%d/%d: %.3fms per query' %
+                    (qry_id+1, nq, profiler.sum_average() * 1000))
                 logging.info("\t\t%s" % profiler.str_average())
                 profiler.reset()
         logging.info('Querying Finished!')
         time_total += profiler.sum_overall()
-        logging.info("Average querying time: %.4f" % (time_total / nq))
+        logging.info("Average querying time: %.3fms" % (time_total * 1000 / nq))
 
         return ids, dis
 
@@ -197,7 +198,7 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=16):
+    def search(self, queries, topk=None, thresh=None, nn_coa=4):
         nq = queries.shape[0]
 
         dsub = self.encoder.ecdat['dsub']
@@ -205,6 +206,11 @@ class IVFPQIndexer(PQIndexer):
         ksub = self.encoder.ecdat['ksub']
         centroids = self.encoder.ecdat['centroids']
         coa_centroids = self.encoder.ecdat['coa_centroids']
+
+        centroids_l2norm = []
+        for i in xrange(nsubq):
+            centroids_l2norm.append((centroids[i] ** 2).sum(1))
+        coa_centroids_l2norm = (coa_centroids ** 2).sum(1)
 
         distab = np.zeros((nsubq, ksub), np.single)
         dis = np.ones((nq, topk), np.single) * np.inf
@@ -215,10 +221,15 @@ class IVFPQIndexer(PQIndexer):
         time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
         for qry_id in range(nq):
-            profiler.start("coa_knn")
+            profiler.start("coa_knn_copy")
             # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
-            coa_dist = distFunc['euclidean'](coa_centroids, query).reshape(-1)
+            # profiler.end()
+            # profiler.start("coa_knn_dist")
+            coa_dist = euclidean(coa_centroids, query,
+                                 featl2norm=coa_centroids_l2norm).reshape(-1)
+            # profiler.end()
+            # profiler.start("coa_knn_knn")
             coa_knn = pq_knn(coa_dist, nn_coa)
             profiler.end()
 
@@ -231,8 +242,9 @@ class IVFPQIndexer(PQIndexer):
                 for qnt_id in range(nsubq):
                     vsub = query[coa_idx:coa_idx+1,
                                  qnt_id*dsub:(qnt_id+1)*dsub]
-                    distab[qnt_id:qnt_id+1, :] = distFunc['euclidean'](
-                        centroids[qnt_id], vsub)
+                    distab[qnt_id:qnt_id+1, :] = euclidean(
+                        centroids[qnt_id], vsub,
+                        featl2norm=centroids_l2norm[qnt_id])
 
                 # construct the distance estimators from tabulated distances
                 idsquerybase, disquerybase = self.sumidxtab(
@@ -257,13 +269,13 @@ class IVFPQIndexer(PQIndexer):
             if (qry_id+1) % interval == 0:
                 time_total += profiler.sum_overall()
                 logging.info(
-                    '\t%d/%d: %.4fs per query' %
-                    (qry_id+1, nq, profiler.sum_average()))
+                    '\t%d/%d: %.3fms per query' %
+                    (qry_id+1, nq, profiler.sum_average() * 1000))
                 logging.info("\t\t%s" % profiler.str_average())
                 profiler.reset()
         logging.info('Querying Finished!')
         time_total += profiler.sum_overall()
-        logging.info("Average querying time: %.4f" % (time_total / nq))
+        logging.info("Average querying time: %.3fms" % (time_total * 1000 / nq))
 
         return ids, dis
 

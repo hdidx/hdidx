@@ -26,6 +26,19 @@ import numpy as np
 import scipy as sp
 
 
+def euclidean(feat, query, featl2norm=None, qryl2norm=None):
+    """ Euclidean distance.
+    """
+    dotprod = query.dot(feat.T)
+    # return dotprod
+    if qryl2norm is None:
+        qryl2norm = (query ** 2).sum(1).reshape(-1, 1)
+    if featl2norm is None:
+        featl2norm = (feat ** 2).sum(1).reshape(1, -1)
+
+    return - 2 * dotprod + qryl2norm + featl2norm
+
+
 def Euclidean(feat, query=None,
               is_sparse=False, is_trans=False):
     """ Euclidean distance.
