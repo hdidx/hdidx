@@ -10,7 +10,6 @@
 DESCRIPTION = """
 """
 
-import time
 import logging
 
 import numpy as np
@@ -213,12 +212,13 @@ class IVFPQIndexer(PQIndexer):
 
         profiler = Profiler()
         interval = 100 if nq >= 100 else 10
+        time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
         for qry_id in range(nq):
             profiler.start("coa_knn")
             # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
-            coa_dist = distFunc['euclidean'](coa_centroids, query)
+            coa_dist = distFunc['euclidean'](coa_centroids, query).reshape(-1)
             coa_knn = pq_knn(coa_dist, nn_coa)
             profiler.end()
 
