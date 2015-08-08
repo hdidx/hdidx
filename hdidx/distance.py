@@ -26,9 +26,31 @@ import numpy as np
 import scipy as sp
 
 
+def fast_euclidean(feat, query, featl2norm):
+    """ Euclidean distance.
+    Args:
+        feat:       N x D feature matrix
+        query:      1 x D feature vector
+        featl2norm: 1 x N vector
+
+    Returns:
+        dist:       1 x N vector
+    """
+    return ((query ** 2).sum() + featl2norm) - 2 * query.dot(feat.T)
+
+
 def euclidean(feat, query, featl2norm=None, qryl2norm=None):
     """ Euclidean distance.
+    Args:
+        feat:       N x D feature matrix
+        query:      Q x D feature vector
+        featl2norm: 1 x N vector
+        qryl2norm:  Q x 1 vector
+
+    Returns:
+        dist:       1 x N vector
     """
+
     dotprod = query.dot(feat.T)
     # return dotprod
     if qryl2norm is None:

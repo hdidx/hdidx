@@ -18,7 +18,7 @@ from hdidx.indexer import Indexer
 from hdidx.encoder import PQEncoder, IVFPQEncoder
 from hdidx.util import pq_knn, Profiler
 from hdidx.distance import distFunc
-from hdidx.distance import euclidean
+from hdidx.distance import fast_euclidean
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext
@@ -198,7 +198,7 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=4):
+    def search(self, queries, topk=None, thresh=None, nn_coa=8):
         nq = queries.shape[0]
 
         dsub = self.encoder.ecdat['dsub']
@@ -221,13 +221,11 @@ class IVFPQIndexer(PQIndexer):
         time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
         for qry_id in range(nq):
-            profiler.start("coa_knn_copy")
             # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
-            # profiler.end()
-            # profiler.start("coa_knn_dist")
-            coa_dist = euclidean(coa_centroids, query,
-                                 featl2norm=coa_centroids_l2norm).reshape(-1)
+            profiler.start("coa_knn")
+            coa_dist = fast_euclidean(
+                coa_centroids, query, coa_centroids_l2norm).reshape(-1)
             # profiler.end()
             # profiler.start("coa_knn_knn")
             coa_knn = pq_knn(coa_dist, nn_coa)
@@ -242,9 +240,8 @@ class IVFPQIndexer(PQIndexer):
                 for qnt_id in range(nsubq):
                     vsub = query[coa_idx:coa_idx+1,
                                  qnt_id*dsub:(qnt_id+1)*dsub]
-                    distab[qnt_id:qnt_id+1, :] = euclidean(
-                        centroids[qnt_id], vsub,
-                        featl2norm=centroids_l2norm[qnt_id])
+                    distab[qnt_id:qnt_id+1, :] = fast_euclidean(
+                        centroids[qnt_id], vsub, centroids_l2norm[qnt_id])
 
                 # construct the distance estimators from tabulated distances
                 idsquerybase, disquerybase = self.sumidxtab(
