@@ -179,6 +179,7 @@ class IVFPQIndexer(PQIndexer):
             keys = np.array(keys, dtype=np.int32).reshape(-1)
 
         start_id = 0
+        logging.info("Building indexes - BEGIN")
         for start_id in range(0, num_vals, self.BLKSIZE):
             cur_num = min(self.BLKSIZE, num_vals - start_id)
             end_id = start_id + cur_num
@@ -191,6 +192,7 @@ class IVFPQIndexer(PQIndexer):
                 self.storage[ivfidx].add(
                     codes[cids == ivfidx, :],
                     keys[start_id:end_id][cids == ivfidx])
+        logging.info("Building indexes - DONE!")
 
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
