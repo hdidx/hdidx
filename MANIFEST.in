@@ -1,3 +1,4 @@
 include DESC.md
 include README.md
 include cext/cext.h
+include cext/hamdist.h
