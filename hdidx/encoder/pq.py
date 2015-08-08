@@ -57,7 +57,7 @@ class PQEncoder(Encoder):
 
         logging.info("Building codebooks in subspaces - BEGIN")
         for q in range(nsubq):
-            logging.info("\tsubspace %d/%d:" % (q, nsubq))
+            logging.info("\tsubspace %d/%d" % (q, nsubq))
             vs = np.require(vals[:, q*dsub:(q+1)*dsub],
                             requirements='C', dtype=np.float32)
             ecdat['centroids'][q] = kmeans(vs, ksub, niter=100)
