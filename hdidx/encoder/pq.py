@@ -89,6 +89,7 @@ class IVFPQEncoder(PQEncoder):
         pass
 
     def build(self, pardic=None):
+        pardic['vals'] = pardic['vals'].copy()
         # training data
         vals = pardic['vals']
         # the number of coarse centroids
