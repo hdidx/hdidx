@@ -93,7 +93,8 @@ class PQIndexer(Indexer):
             profiler.end()
 
             profiler.start("knn")       # time for finding the kNN
-            cur_ids = pq_knn(disquerybase, topk)
+            realk = min(disquerybase.shape[0], topk)
+            cur_ids = pq_knn(disquerybase, realk)
             profiler.end()
 
             profiler.start("result")    # time for getting final result
@@ -210,14 +211,18 @@ class IVFPQIndexer(PQIndexer):
         dis = np.ones((nq, topk), np.single) * np.inf
         ids = np.ones((nq, topk), np.int32) * -1
 
-        coa_dist = distFunc['euclidean'](coa_centroids, queries)
-        logging.info('Start Querying ...')
-        time_start = time.time()
+        profiler = Profiler()
         interval = 100 if nq >= 100 else 10
+        logging.info('Start Querying ...')
         for qry_id in range(nq):
+            profiler.start("coa_knn")
             # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
-            coa_knn = pq_knn(coa_dist[qry_id, :], nn_coa)
+            coa_dist = distFunc['euclidean'](coa_centroids, query)
+            coa_knn = pq_knn(coa_dist, nn_coa)
+            profiler.end()
+
+            profiler.start("distab+distance")
             query = query - coa_centroids[coa_knn, :]
             v_idsquerybase = []
             v_disquerybase = []
@@ -237,17 +242,28 @@ class IVFPQIndexer(PQIndexer):
 
             idsquerybase = np.hstack(tuple(v_idsquerybase))
             disquerybase = np.hstack(tuple(v_disquerybase))
+            profiler.end()
+
+            profiler.start("knn")       # time for finding the kNN
             realk = min(disquerybase.shape[0], topk)
             cur_ids = pq_knn(disquerybase, realk)
+            profiler.end()
 
+            profiler.start("result")    # time for getting final result
             ids[qry_id, :realk] = idsquerybase[cur_ids]
             dis[qry_id, :realk] = disquerybase[cur_ids]
+            profiler.end()
+
             if (qry_id+1) % interval == 0:
+                time_total += profiler.sum_overall()
                 logging.info(
                     '\t%d/%d: %.4fs per query' %
-                    (qry_id+1, nq, (time.time() - time_start) / interval))
-                time_start = time.time()
+                    (qry_id+1, nq, profiler.sum_average()))
+                logging.info("\t\t%s" % profiler.str_average())
+                profiler.reset()
         logging.info('Querying Finished!')
+        time_total += profiler.sum_overall()
+        logging.info("Average querying time: %.4f" % (time_total / nq))
 
         return ids, dis
 
