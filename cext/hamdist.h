@@ -48,7 +48,6 @@ inline int hamdist64(uint64_t a, uint64_t b) {
  */
 static inline int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
   int dist = 0;
-  int pos  = 8;
   switch (nbytes) {
     case 4:   // 32-bit
       dist = hamdist32(*(uint32_t *)a, *(uint32_t *)b);
@@ -67,22 +66,20 @@ static inline int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
              hamdist64(((uint64_t *)a)[3], ((uint64_t *)b)[3]);
       break;
     default:  // arbitrary length
-      /* calc 64-bit substrings first */
-      while (pos < nbytes) {
-        dist += hamdist64(*(uint64_t *)a, *(uint64_t *)b);
-        a += 8; b += 8; pos += 8;
-      }
-      /* then 32-bit substrings */
-      pos -= (8-4);
-      while (pos < nbytes) {
-        dist += hamdist32(*(uint32_t *)a, *(uint32_t *)b);
-        a += 4; b += 4; pos += 4;
-      }
-      /* then substrings shorter than 32-bit */
-      pos -= (4-1);
-      while (pos < nbytes) {
-        dist += BIT_CNT_MAP[(*a) ^ (*b)];
-        a++; b++; pos++;
+      {
+        int i;
+        int num_64 = nbytes / 8;
+        int num_rest = nbytes % 8;
+
+        for (i=0; i<num_64; i++) {
+          dist += hamdist64(*(uint64_t *)a, *(uint64_t *)b);
+          a += 8; b += 8;
+        }
+
+        for (i=0; i<num_rest; i++) {
+          dist += BIT_CNT_MAP[(*a) ^ (*b)];
+          a++; b++;
+        }
       }
   }
   return dist;
