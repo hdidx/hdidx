@@ -14,3 +14,7 @@ void hamming_core_cfunc(uint8_t * db, uint8_t * qry, int dim, int num,
 
 void knn_count_core_cfunc(const uint16_t * D, int numD, int maxD,
     int topk, int32_t * out);
+
+void fast_euclidean_core_cfunc(const float * feat, const float * query,
+    const float * featl2norm, int dim, int num,
+    float * dist);

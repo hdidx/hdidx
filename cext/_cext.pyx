@@ -28,6 +28,9 @@ cdef extern from "cext.h":
                             cnp.uint16_t * dist)
     void knn_count_core_cfunc(cnp.uint16_t * D, int numD, int maxD,
                               int topk, cnp.int32_t * out);
+    void fast_euclidean_core_cfunc(const cnp.float32_t * feat, const cnp.float32_t * query,
+                                   const cnp.float32_t * featl2norm, int dim, int num,
+                                   cnp.float32_t * dist);
 
 # create the wrapper code, with numpy type annotations
 def sumidxtab_core(cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] D not None,
@@ -67,3 +70,25 @@ def knn_count(cnp.ndarray[cnp.uint16_t, ndim=1, mode="c"] D not None,
                          D.shape[0], maxD, topk,
                          <cnp.int32_t*> cnp.PyArray_DATA(out))
     return out
+
+
+def fast_euclidean(feat, query, featl2norm):
+    """ Euclidean distance.
+    Args:
+        feat:       N x D feature matrix
+        query:      1 x D feature vector
+        featl2norm: 1 x N vector
+
+    Returns:
+        dist:       1 x N vector
+    """
+    N = feat.shape[0]
+    D = feat.shape[1]
+    dist = np.empty((1, N), dtype=np.float32)
+    # dist = featl2norm.astype(np.float32)
+    fast_euclidean_core_cfunc(<cnp.float32_t *> cnp.PyArray_DATA(feat),
+                              <cnp.float32_t *> cnp.PyArray_DATA(query),
+                              <cnp.float32_t *> cnp.PyArray_DATA(featl2norm),
+                              D, N,
+                              <cnp.float32_t *> cnp.PyArray_DATA(dist))
+    return dist

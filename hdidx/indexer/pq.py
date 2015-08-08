@@ -18,7 +18,8 @@ from hdidx.indexer import Indexer
 from hdidx.encoder import PQEncoder, IVFPQEncoder
 from hdidx.util import pq_knn, Profiler
 from hdidx.distance import distFunc
-from hdidx.distance import fast_euclidean
+# from hdidx.distance import fast_euclidean
+from hdidx._cext import fast_euclidean
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext

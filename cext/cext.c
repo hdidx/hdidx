@@ -83,3 +83,70 @@ void knn_count_core_cfunc(const uint16_t * D, int numD, int maxD,
   free(counter);
   free(v_pos);
 }
+
+void fast_euclidean_core_cfunc(const float * feat, const float * query,
+    const float * featl2norm, int dim, int num,
+    float * dist) {
+  int i, j;
+  const float * pfeat;
+  float dotproduct;
+  float qryl2norm = 0.0;
+
+  for (j=0; j<dim; j++) {
+    qryl2norm += query[j] * query[j];
+  }
+
+  for (i=0; i<num; i++) {
+    dist[i] = qryl2norm + featl2norm[i];
+    pfeat = feat + i * dim;
+    dotproduct = 0.0;
+    for (j=0; j<dim; j++) {
+      dotproduct += query[j] * pfeat[j];
+    }
+    dist[i] -= 2 * dotproduct;
+  }
+}
+
+
+/*
+void fast_euclidean_core_cfunc(const float * feat, const float * query,
+    const float * featl2norm, int dim, int num,
+    float * dist) {
+  static int i,j;
+  static float tmp;
+  for(i = 0; i < num; ++i, ++dist, feat += dim) {
+    *dist = 0;
+    for(j = 0; j < dim; ++j){
+      tmp = query[j] - feat[j];
+      *dist += tmp * tmp;
+    }
+  }
+}
+*/
+
+/*
+void fast_euclidean_core_cfunc(const float * feat, const float * query,
+    const float * featl2norm, int dim, int num,
+    float * dist) {
+  int i, j;
+  const float * pfeat;
+  float dotproduct;
+  float qryl2norm = 0.0;
+
+  for (j=0; j<dim; j++) {
+    qryl2norm += query[j] * query[j];
+  }
+
+  // memcpy(dist, featl2norm, sizeof(dist[0]) * num);
+  for (i=0; i<num; i++) {
+    // dist[i] += qryl2norm;
+    dist[i] = qryl2norm + featl2norm[i];
+    pfeat = feat + i * dim;
+    dotproduct = 0.0;
+    for (j=0; j<dim; j++) {
+      dotproduct += query[j] * pfeat[j];
+    }
+    dist[i] -= 2 * dotproduct;
+  }
+}
+*/
