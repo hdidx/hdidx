@@ -223,7 +223,7 @@ class IVFPQIndexer(PQIndexer):
             profiler.end()
 
             profiler.start("distab+distance")
-            query -= coa_centroids[coa_knn, :]
+            query = query - coa_centroids[coa_knn, :]
             v_idsquerybase = []
             v_disquerybase = []
             for coa_idx in range(nn_coa):
