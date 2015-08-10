@@ -61,40 +61,54 @@ class Dataset(object):
             if not key.startswith("__"):
                 setattr(self, key, val.T)
         self.groundtruth = self.groundtruth[:, :1]
+        # self.query = self.query[:1000, :]
         self.nlrn = self.learn.shape[0]
         self.nbae = self.base.shape[0]
         self.nqry = self.query.shape[0]
         self.name = data_path.split("/")[-1].split(".")[0]
 
 
-def compute_stats(ids_gnd, ids_qry, k):
+def compute_stats_recall(ids_gnd, ids_qry, k):
     nquery = ids_qry.shape[0]
-    nn_ranks_pqc = np.zeros(nquery)
+    n_pos = float(ids_gnd.shape[1])
+    hit_map = np.zeros(ids_qry.shape, np.int)
     for i in xrange(nquery):
-        ret_lst = ids_qry[i, :].tolist()
-        nn_pos = []
-        for gnd_id in ids_gnd[i, :]:
-            try:
-                nn_pos.append(ret_lst.index(gnd_id))
-            except ValueError:
-                pass
-
-        if len(nn_pos) == 1:
-            nn_ranks_pqc[i] = nn_pos[0]
-        else:
-            nn_ranks_pqc[i] = k + 1
-
-    nn_ranks_pqc.sort()
+        hit_map[i, :] = [1 if ret_id in ids_gnd[i, :] else 0
+                         for ret_id in ids_qry[i, :]]
 
     v_recall = []
     for i in [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000,
               10000, 20000, 50000, 100000, 200000, 500000, 1000000]:
         if i > k:
             break
-        r_at_i = (nn_ranks_pqc < i).sum().astype(np.float) / nquery
+        hit_cnt = hit_map[:, :i].sum()
+        r_at_i = float(hit_cnt) / n_pos / nquery
         logging.info('recall@%3d = %.4f' % (i, r_at_i))
         v_recall.append((i, r_at_i))
     return v_recall
+
+
+def compute_stats_prec(ids_gnd, ids_qry, k):
+    nquery = ids_qry.shape[0]
+    hit_map = np.zeros(ids_qry.shape, np.int)
+    for i in xrange(nquery):
+        hit_map[i, :] = [1 if ret_id in ids_gnd[i, :] else 0
+                         for ret_id in ids_qry[i, :]]
+
+    v_prec = []
+    for i in [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000,
+              10000, 20000, 50000, 100000, 200000, 500000, 1000000]:
+        if i > k:
+            break
+        hit_cnt = hit_map[:, :i].sum()
+        p_at_i = float(hit_cnt) / i / nquery
+        logging.info('prec@%3d = %.4f' % (i, p_at_i))
+        v_prec.append((i, p_at_i))
+    return v_prec
+
+
+compute_stats = compute_stats_prec
+compute_stats = compute_stats_recall
 
 
 BLOCK_SIZE = 1000
@@ -231,7 +245,7 @@ def main(args):
                     'coarsek': args.coarsek,
                 },
                 'search_param': {
-                    'nn_coa': 1,
+                    'nn_coa': 10,
                 },
                 'index_prefix': '%s/%s_%s_nsubq%d_coarsek%d' % (
                     exp_dir, data.name, 'ivfpq', nsubq, args.coarsek),

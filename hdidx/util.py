@@ -86,6 +86,17 @@ def pq_knn(dist, topk):
 
 
 # Profiling
+START_TIME = 0
+
+
+def tic():
+    global START_TIME
+    START_TIME = time.time()
+
+
+def toc():
+    return time.time() - START_TIME
+
 
 class Profiler(object):
     """ Profiling the running time of code snippet.
