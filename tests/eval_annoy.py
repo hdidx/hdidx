@@ -61,10 +61,10 @@ def main(args):
 
     for ntrees in args.ntrees:
         t = AnnoyIndex(f)   # Length of item vector that will be indexed
-        idxpath = 'sift_annoy_ntrees%d.idx' % ntrees
+        idxpath = os.path.join(args.exp_dir, 'sift_annoy_ntrees%d.idx' % ntrees)
         if not os.path.exists(idxpath):
             logging.info("Adding items ...")
-            for i in xrange(data.base.nbae):
+            for i in xrange(data.nbae):
                 t.add_item(i, data.base[i])
                 if i % 100000 == 0:
                     logging.info("\t%d/%d" % (i, data.nbae))
