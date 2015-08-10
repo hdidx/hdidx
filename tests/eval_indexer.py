@@ -135,6 +135,7 @@ def load_result(rslt_path):
 def eval_indexer(data, indexer_param, dsname, topk):
     CurIndexer = indexer_param['indexer']
     build_param = indexer_param['build_param']
+    search_param = indexer_param.get('search_param', {})
     index_prefix = indexer_param['index_prefix']
     info_path = index_prefix + ".info"
     lmdb_path = index_prefix + ".idx"
@@ -171,7 +172,7 @@ def eval_indexer(data, indexer_param, dsname, topk):
     else:
         logging.info("Searching ...")
         tic = time.time()
-        ids, dis = idx.search(data.query, topk=topk)
+        ids, dis = idx.search(data.query, topk=topk, **search_param)
         toc = time.time() - tic
         save_result(rslt_path, ids, dis)
         logging.info("\tDone!")
@@ -228,6 +229,9 @@ def main(args):
                     'nsubq': nsubq,
                     'nsubqbits': 8,
                     'coarsek': args.coarsek,
+                },
+                'search_param': {
+                    'nn_coa': 1,
                 },
                 'index_prefix': '%s/%s_%s_nsubq%d_coarsek%d' % (
                     exp_dir, data.name, 'ivfpq', nsubq, args.coarsek),

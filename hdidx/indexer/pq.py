@@ -63,7 +63,7 @@ class PQIndexer(Indexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None):
+    def search(self, queries, topk=None,  **kwargs):
         nq = queries.shape[0]
 
         dsub = self.encoder.ecdat['dsub']
@@ -79,7 +79,7 @@ class PQIndexer(Indexer):
         interval = 100 if nq >= 100 else 10
         time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
-        for qry_id in range(nq):
+        for qry_id in xrange(nq):
             profiler.start("distab")    # time for computing distance table
             # pre-compute the table of squared distance to centroids
             for qnt_id in range(nsubq):
@@ -199,7 +199,8 @@ class IVFPQIndexer(PQIndexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def search(self, queries, topk=None, thresh=None, nn_coa=8):
+    def search(self, queries, topk=None, **kwargs):
+        nn_coa = kwargs.get('nn_coa', 8)
         nq = queries.shape[0]
 
         dsub = self.encoder.ecdat['dsub']
@@ -221,7 +222,7 @@ class IVFPQIndexer(PQIndexer):
         interval = 100 if nq >= 100 else 10
         time_total = 0.0    # total time for all queries
         logging.info('Start Querying ...')
-        for qry_id in range(nq):
+        for qry_id in xrange(nq):
             # Here `copy()` can ensure that you DONOT modify the queries
             query = queries[qry_id:qry_id+1, :].copy()
             profiler.start("coa_knn")

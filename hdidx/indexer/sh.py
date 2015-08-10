@@ -143,7 +143,7 @@ class SHIndexer(Indexer):
 
         return Dh
 
-    def search(self, queries, topk=None, thresh=None):
+    def search(self, queries, topk=None, **kwargs):
         nq = queries.shape[0]
         nbits = self.encoder.ecdat['nbits']
 
