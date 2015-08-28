@@ -106,92 +106,92 @@ class TestPQNew(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
-    # def test_ivfpq_lmdb_0_build_save_add_search(self):
-    #     """ Test IVFPQ: LMDB storage
-    #             from scratch
-    #     """
+    def test_ivfpq_lmdb_0_build_save_add_search(self):
+        """ Test IVFPQ: LMDB storage
+                from scratch
+        """
 
-    #     # create indexer
-    #     idx = indexer.IVFPQIndexer()
-    #     # building code books
-    #     idx.build({
-    #         'vals': self.vtrain,
-    #         'nsubq': self.nsubq,
-    #         'coarsek': self.coarsek,
-    #     })
-    #     # saving indexer to disk file
-    #     idx.save('/tmp/hdidx_test_ivf_lmdb.info')
-    #     # set backend storage
-    #     idx.set_storage('lmdb', {
-    #         'path': '/tmp/hdidx_test_ivf_lmdb.idx',
-    #         'clear': True,
-    #     })
-    #     # indexing
-    #     idx.add(self.vbase)
-    #     # search
-    #     ids, dis = idx.search(self.vquery, topk=self.topk)
+        # create indexer
+        idx = indexer.IVFPQIndexer()
+        # building code books
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': self.nsubq,
+            'coarsek': self.coarsek,
+        })
+        # saving indexer to disk file
+        idx.save('/tmp/hdidx_test_ivf_lmdb.info')
+        # set backend storage
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
+            'clear': True,
+        })
+        # indexing
+        idx.add(self.vbase)
+        # search
+        ids, dis = idx.search(self.vquery, topk=self.topk)
 
-    #     # cProfile.runctx('ids, dis = idx.search(self.vquery, topk=self.topk)',
-    #     #                 None, locals())
+        # cProfile.runctx('ids, dis = idx.search(self.vquery, topk=self.topk)',
+        #                 None, locals())
 
-    #     # evaluate
-    #     compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+        # evaluate
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
-    # def test_ivfpq_lmdb_1_SKIP_load_add_search(self):
-    #     """ Test IVFPQ: LMDB storage
-    #             load pre-computed quantizers from disk file
-    #     """
-    #     # create indexer
-    #     idx = indexer.IVFPQIndexer()
-    #     # load indexer from disk file
-    #     idx.load('/tmp/hdidx_test_ivf_lmdb.info')
-    #     # set backend storage
-    #     idx.set_storage('lmdb', {
-    #         'path': '/tmp/hdidx_test_ivf_lmdb.idx',
-    #         'clear': True,
-    #     })
-    #     # indexing
-    #     idx.add(self.vbase)
-    #     # search
-    #     ids, dis = idx.search(self.vquery, topk=self.topk)
-    #     # evaluate
-    #     compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+    def test_ivfpq_lmdb_1_SKIP_load_add_search(self):
+        """ Test IVFPQ: LMDB storage
+                load pre-computed quantizers from disk file
+        """
+        # create indexer
+        idx = indexer.IVFPQIndexer()
+        # load indexer from disk file
+        idx.load('/tmp/hdidx_test_ivf_lmdb.info')
+        # set backend storage
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
+            'clear': True,
+        })
+        # indexing
+        idx.add(self.vbase)
+        # search
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        # evaluate
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
-    # def test_ivfpq_lmdb_2_SKIP_load_SKIP_search(self):
-    #     """ Test IVFPQ: LMDB storage
-    #             1. load pre-computed quantizers from disk file
-    #             2. load indices from LMDB
-    #     """
-    #     # create indexer
-    #     idx = indexer.IVFPQIndexer()
-    #     # load indexer from disk file
-    #     idx.load('/tmp/hdidx_test_ivf_lmdb.info')
-    #     # set backend storage
-    #     idx.set_storage('lmdb', {
-    #         'path': '/tmp/hdidx_test_ivf_lmdb.idx',
-    #         'clear': False,
-    #     })
-    #     # search
-    #     ids, dis = idx.search(self.vquery, topk=self.topk)
-    #     # evaluate
-    #     compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+    def test_ivfpq_lmdb_2_SKIP_load_SKIP_search(self):
+        """ Test IVFPQ: LMDB storage
+                1. load pre-computed quantizers from disk file
+                2. load indices from LMDB
+        """
+        # create indexer
+        idx = indexer.IVFPQIndexer()
+        # load indexer from disk file
+        idx.load('/tmp/hdidx_test_ivf_lmdb.info')
+        # set backend storage
+        idx.set_storage('lmdb', {
+            'path': '/tmp/hdidx_test_ivf_lmdb.idx',
+            'clear': False,
+        })
+        # search
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        # evaluate
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
-    # def test_ivfpq_mem(self):
-    #     """ Test IVFPQ: memory storage
-    #     """
-    #     idx = indexer.IVFPQIndexer()
+    def test_ivfpq_mem(self):
+        """ Test IVFPQ: memory storage
+        """
+        idx = indexer.IVFPQIndexer()
 
-    #     idx.build({
-    #         'vals': self.vtrain,
-    #         'nsubq': self.nsubq,
-    #         'coarsek': self.coarsek,
-    #     })
-    #     idx.save('/tmp/hdidx_test_ivf_mem.info')
-    #     idx.set_storage('mem', {})
+        idx.build({
+            'vals': self.vtrain,
+            'nsubq': self.nsubq,
+            'coarsek': self.coarsek,
+        })
+        idx.save('/tmp/hdidx_test_ivf_mem.info')
+        idx.set_storage('mem', {})
 
-    #     idx.add(self.vbase)
-    #     ids, dis = idx.search(self.vquery, topk=self.topk)
-    #     compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
+        idx.add(self.vbase)
+        ids, dis = idx.search(self.vquery, topk=self.topk)
+        compute_stats(self.vquery.shape[0], self.ids_gnd, ids, self.topk)
 
     def test_pq_lmdb_0_build_save_add_search(self):
         """ Test PQ: LMDB storage
