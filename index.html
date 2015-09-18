@@ -5,7 +5,7 @@
     <title>HDIdx by wanji</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
@@ -52,11 +52,11 @@ When a query vector comes, it will be mapped to hash codes by the same <code>Enc
 
 <p><strong>HDIdx</strong> can be installed via <code>pip</code>:</p>
 
-<div class="highlight highlight-bash"><pre>[sudo] pip install hdidx</pre></div>
+<div class="highlight highlight-source-shell"><pre>[sudo] pip install hdidx</pre></div>
 
 <p>By default, <strong>HDIdx</strong> use kmeans algorithm provided by <a href="http://www.scipy.org/"><em>SciPy</em></a>. To be more efficient, you can install python extensions of <a href="http://opencv.org/"><em>OpenCV</em></a>, which can be installed via <code>apt-get</code> on Ubuntu. For other Linux distributions, e.g. CentOS, you need to compile it from source.</p>
 
-<div class="highlight highlight-bash"><pre>[sudo] apt-get install python-opencv</pre></div>
+<div class="highlight highlight-source-shell"><pre>[sudo] apt-get install python-opencv</pre></div>
 
 <p><strong>HDIdx</strong> will use <a href="http://opencv.org/"><em>OpenCV</em></a> automatically if it is available.</p>
 
@@ -65,7 +65,7 @@ When a query vector comes, it will be mapped to hash codes by the same <code>Enc
 
 <p>Here is a simple example. See this <a href="http://nbviewer.ipython.org/gist/wanji/c08693f06ef744feef50">notebook</a> for more examples.</p>
 
-<div class="highlight highlight-python"><pre><span class="pl-c"># import necessary packages</span>
+<div class="highlight highlight-source-python"><pre><span class="pl-c"># import necessary packages</span>
 
 <span class="pl-k">import</span> hdidx
 <span class="pl-k">import</span> numpy <span class="pl-k">as</span> np
@@ -106,7 +106,16 @@ idx.search(X_qry, <span class="pl-c1">100</span>)</pre></div>
 
     </section>
 
-  
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-67797434-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
   </body>
 </html>
-
