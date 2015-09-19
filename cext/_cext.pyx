@@ -38,7 +38,7 @@ def sumidxtab_core(cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] D not None,
     out = np.zeros(blk.shape[0], dtype=D.dtype)
     sumidxtab_core_cfunc(<cnp.float32_t*> cnp.PyArray_DATA(D),
                          <cnp.uint8_t*> cnp.PyArray_DATA(blk),
-                         D.shape[0], D.shape[1], blk.shape[0],
+                         int(D.shape[0]), int(D.shape[1]), int(blk.shape[0]),
                          <cnp.float32_t*> cnp.PyArray_DATA(out))
     return out
 
@@ -55,7 +55,7 @@ def hamming(cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] Q not None,
     for i in xrange(nq):
         hamming_core_cfunc(<cnp.uint8_t*> cnp.PyArray_DATA(Q[i, :]),
                            <cnp.uint8_t*> cnp.PyArray_DATA(D),
-                           dq, nd,
+                           int(dq), int(nd),
                            <cnp.uint16_t*> cnp.PyArray_DATA(out[i, :]))
     return out
 
@@ -65,9 +65,8 @@ def knn_count(cnp.ndarray[cnp.uint16_t, ndim=1, mode="c"] D not None,
     Return topk by counting sort
     """
     out = np.zeros(topk, dtype=np.int32)
-    numD = D.shape[0]
     knn_count_core_cfunc(<cnp.uint16_t*> cnp.PyArray_DATA(D),
-                         D.shape[0], maxD, topk,
+                         int(D.shape[0]), maxD, topk,
                          <cnp.int32_t*> cnp.PyArray_DATA(out))
     return out
 
