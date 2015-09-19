@@ -343,7 +343,9 @@ if __name__ == '__main__':
                  "different even if the database and queries are exactly " +
                  "the same, this is because the randomization exists in " +
                  "k-means clustering.")
-    shutil.rmtree("./test-tmp")
-    os.makedirs("./test-tmp")
+    TEMPDIR = "./test-tmp"
+    if os.path.exists(TEMPDIR):
+        shutil.rmtree(TEMPDIR)
+    os.makedirs(TEMPDIR)
     unittest.main(failfast=True)
     # cProfile.run('unittest.main(failfast=True)')
