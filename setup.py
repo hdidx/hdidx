@@ -30,7 +30,7 @@ import numpy
 from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.2',
+      version='0.2.1',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'hdidx'},
@@ -56,7 +56,7 @@ setup(name='hdidx',
           'tools/hdidx_build',
           'tools/hdidx_index',
       ],
-      url='https://github.com/wanji/hdidx',
+      url='http://wanji.me/hdidx',
       license='LICENSE.md',
       description='ANN Search in High-Dimensional Spaces',
 

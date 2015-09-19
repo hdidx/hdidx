@@ -46,10 +46,10 @@ void sumidxtab_core_cfunc(const float * D, const uint8_t * blk,
     fprintf(stderr, "\n");
   }
   */
-
+  const uint8_t * prow;
   for (i=0; i<cur_num; i++) {
     out[i] = 0.0;
-    const uint8_t * prow = blk + nsq * i;
+    prow = blk + nsq * i;
     for (j=0; j<nsq; j++) {
       out[i] += D[j * ksub + prow[j]];
     }
@@ -63,8 +63,8 @@ void knn_count_core_cfunc(const uint16_t * D, int numD, int maxD,
     int topk, int32_t * out) {
   int * counter = (int *)malloc((maxD + 1) * sizeof(counter[0]));
   int * v_pos = (int *)malloc((maxD + 1) * sizeof(counter[0]));
-  memset(counter, 0, (maxD + 1) * sizeof(counter[0]));
   int i, pos;
+  memset(counter, 0, (maxD + 1) * sizeof(counter[0]));
   for (i=0; i<numD; i++) {
     counter[D[i]]++;
   }

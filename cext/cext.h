@@ -4,7 +4,21 @@
   > Created Time: Wed 05 Nov 2014 02:38:01 PM CST
   > Descriptions: 
  ************************************************************************/
+
+#ifdef _WIN32
+typedef unsigned char  uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int   uint32_t;
+typedef unsigned long  uint64_t;
+
+typedef char  int8_t;
+typedef short int16_t;
+typedef int   int32_t;
+typedef long  int64_t;
+#else
 #include <stdint.h>
+#endif
+
 
 void sumidxtab_core_cfunc(const float * D, const uint8_t * blk,
     int nsq, int ksub, int cur_num, float * out);

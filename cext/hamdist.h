@@ -29,6 +29,21 @@ static const int BIT_CNT_MAP[] = {
   3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
   4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8};
 
+#ifdef _WIN32
+/**
+ * hamming distance of codes with arbitrary length
+ */
+int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
+  int dist = 0;
+  int i;
+
+  for (i=0; i<nbytes; i++) {
+    dist += BIT_CNT_MAP[(*a) ^ (*b)];
+    a++; b++;
+  }
+  return dist;
+}
+#else
 /**
  * hamming distance of 32-bit codes
  */
@@ -84,6 +99,8 @@ static inline int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
   }
   return dist;
 }
+
+#endif
 
 #endif
 
