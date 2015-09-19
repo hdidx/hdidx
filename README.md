@@ -36,6 +36,15 @@ By default, **HDIdx** use kmeans algorithm provided by [*SciPy*](http://www.scip
 
 **HDIdx** will use [*OpenCV*](http://opencv.org/) automatically if it is available.
 
+### Windows Guide
+
+General dependencies:
+
+- [Anaconda](https://store.continuum.io/cshop/anaconda/)
+- [Microsoft Visual C++ Compiler for Python](http://www.microsoft.com/en-us/download/details.aspx?id=44266)
+
+After install the above mentioned software, hdidx can be installed via `pip` in the *Anaconda Command Prompt*.
+
 ## Example
 
 Here is a simple example. See this [notebook](http://nbviewer.ipython.org/gist/wanji/c08693f06ef744feef50) for more examples.
