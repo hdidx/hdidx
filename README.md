@@ -1,5 +1,9 @@
 # **HDIdx**: Indexing High-Dimensional Data
 
+[![pypi](https://img.shields.io/pypi/v/hdidx.svg?style=flat-square)](https://pypi.python.org/pypi/hdidx/)
+[![downloads_month](https://img.shields.io/pypi/dm/hdidx.svg?style=flat-square)](https://pypi.python.org/pypi/hdidx/)
+[![license](https://img.shields.io/pypi/l/hdidx.svg?style=flat-square)](https://raw.githubusercontent.com/wanji/hdidx/master/LICENSE.md)
+
 ## What is **HDIdx**?
 
 **HDIdx** is a python package for approximate nearest neighbor (ANN) search. Nearest neighbor (NN) search is very challenging in high-dimensional space because of the [*Curse of Dimensionality*](https://en.wikipedia.org/wiki/Curse_of_dimensionality) problem. The basic idea of **HDIdx** is to compress the original feature vectors into compact binary codes, and perform approximate NN search instead of extract NN search. This can largely reduce the storage requirements and can significantly speed up the search.
