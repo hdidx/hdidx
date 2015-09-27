@@ -60,7 +60,7 @@ setup(name='hdidx',
       license='LICENSE.md',
       description='ANN Search in High-Dimensional Spaces',
 
-      long_description=read_md("DESC.md"),
+      long_description=open("DESC.rst").read(),
       install_requires=[
           "numpy      >= 1.6.0",
           "scipy      >= 0.9.0",
