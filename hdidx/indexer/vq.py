@@ -2,12 +2,13 @@
 # coding: utf-8
 
 """
-   File Name: pq.py
+   File Name: vq.py
       Author: Wan Ji
       E-mail: wanji@live.com
   Created on: Mon Jul 27 10:22:00 2015 CST
 """
 DESCRIPTION = """
+Indexers for Vector Quantization algorithms.
 """
 
 import logging

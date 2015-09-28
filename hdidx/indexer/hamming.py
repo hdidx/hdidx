@@ -2,32 +2,34 @@
 # coding: utf-8
 
 """
-   File Name: sh.py
+   File Name: hamming.py
       Author: Wan Ji
       E-mail: wanji@live.com
   Created on: Mon Jul 27 10:22:06 2015 CST
 """
 DESCRIPTION = """
+Indexers for binary codes in Hamming space.
 """
 
 import logging
 
 import numpy as np
 
+import hdidx.encoder
 from hdidx.indexer import Indexer
-from hdidx.encoder import SHEncoder
 from hdidx.util import Profiler
 from hdidx.storage import createStorage
 
 import hdidx._cext as cext
 
 BIT_CNT_MAP = np.array([bin(i).count("1") for i in xrange(256)], np.uint16)
+DEFAULT_HAMMING_ENCODER = "SHEncoder"
 
 
 class SHIndexer(Indexer):
-    def __init__(self):
+    def __init__(self, encoder=DEFAULT_HAMMING_ENCODER):
         Indexer.__init__(self)
-        self.encoder = SHEncoder()
+        self.encoder = getattr(hdidx.encoder, encoder)()
         self.set_storage()
 
     def __del__(self):
