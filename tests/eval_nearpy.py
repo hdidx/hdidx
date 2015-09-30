@@ -2,23 +2,26 @@
 # coding: utf-8
 
 """
-   File Name: eval_annoy.py
+   File Name: eval_nearpy.py
       Author: Wan Ji
       E-mail: wanji@live.com
   Created on: Mon Aug 10 21:40:32 2015 CST
 """
 DESCRIPTION = """
-Evaluation the performance of Annoy.
+Evaluation the performance of RandomBinaryProjections from NearPy.
 """
 
 import os
 import argparse
 import logging
 import time
+import itertools
 
 import numpy as np
 
-from annoy import AnnoyIndex
+from nearpy import Engine
+from nearpy.hashes import RandomBinaryProjections
+from nearpy.filters import NearestFilter, UniqueFilter
 
 from hdidx.util import tic, toc
 from eval_indexer import Dataset, compute_stats
@@ -43,8 +46,10 @@ def getargs():
                         help='path of the dataset')
     parser.add_argument('--exp_dir', type=str,
                         help='directory for saving experimental results')
-    parser.add_argument("--ntrees", type=int, nargs='+', default=[16],
-                        help="number of trees")
+    parser.add_argument("--nbits", type=int, nargs='+', default=[32, 16, 8],
+                        help="number of bits per hash tables")
+    parser.add_argument("--ntbls", type=int, nargs='+', default=[2, 4, 8],
+                        help="number of hash tables")
     parser.add_argument("--topk", type=int, default=100,
                         help="retrieval `topk` nearest neighbors")
     parser.add_argument("--log", type=str, default="INFO",
@@ -58,32 +63,40 @@ def main(args):
     """
 
     data = Dataset(args.dataset)
-    f = data.base.shape[1]
+    num, dim = data.base.shape
 
-    for ntrees in args.ntrees:
-        t = AnnoyIndex(f)   # Length of item vector that will be indexed
-        idxpath = os.path.join(args.exp_dir, 'sift_annoy_ntrees%d.idx' % ntrees)
-        if not os.path.exists(idxpath):
-            logging.info("Adding items ...")
-            for i in xrange(data.nbae):
-                t.add_item(i, data.base[i])
-                if i % 100000 == 0:
-                    logging.info("\t%d/%d" % (i, data.nbae))
-            logging.info("\tDone!")
-            logging.info("Building indexes ...")
-            t.build(ntrees)
-            logging.info("\tDone!")
-            t.save(idxpath)
-        else:
-            logging.info("Loading indexes ...")
-            t.load(idxpath)
-            logging.info("\tDone!")
+    # We are looking for the ten closest neighbours
+    nearest = NearestFilter(args.topk)
+    # We want unique candidates
+    unique = UniqueFilter()
+
+    # Create engines for all configurations
+    for nbit, ntbl in itertools.product(args.nbits, args.ntbls):
+        logging.info("Creating Engine ...")
+        lshashes = [RandomBinaryProjections('rbp%d' % i, nbit)
+                    for i in xrange(ntbl)]
+
+        # Create engine with this configuration
+        engine = Engine(dim, lshashes=lshashes,
+                        vector_filters=[unique, nearest])
+        logging.info("\tDone!")
+
+        logging.info("Adding items ...")
+        for i in xrange(num):
+            engine.store_vector(data.base[i, :], i)
+            if i % 100000 == 0:
+                logging.info("\t%d/%d" % (i, data.nbae))
+        logging.info("\tDone!")
 
         ids = np.zeros((data.nqry, args.topk), np.int)
         logging.info("Searching ...")
         tic()
         for i in xrange(data.nqry):
-            ids[i, :] = np.array(t.get_nns_by_vector(data.query[i], args.topk))
+            reti = [y for x, y, z in
+                    np.array(engine.neighbours(data.query[i]))]
+            ids[i, :len(reti)] = reti
+            if i % 100 == 0:
+                logging.info("\t%d/%d" % (i, data.nqry))
         time_costs = toc()
         logging.info("\tDone!")
 
@@ -97,7 +110,7 @@ def main(args):
 
         with open(report, "a") as rptf:
             rptf.write("=" * 64 + "\n")
-            rptf.write("index_%s-ntrees_%s\n" % ("Annoy", ntrees))
+            rptf.write("index_%s-nbit_%d-ntbl_%d\n" % ("NearPy", nbit, ntbl))
             rptf.write("-" * 64 + "\n")
             rptf.write("recall@%-8d%.4f\n" % (args.topk, r_at_k))
             rptf.write("time cost (ms): %.3f\n" %

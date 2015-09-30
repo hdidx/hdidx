@@ -8,6 +8,7 @@
   Created on: Tue Jul 28 13:31:06 2015 CST
 """
 DESCRIPTION = """
+Evaluation the performance of HDIdx.
 """
 
 import os
