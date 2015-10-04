@@ -237,15 +237,15 @@ def main(args):
                 'index_prefix': '%s/%s_%s_nbits%d' % (
                     exp_dir, data.name, 'mih', nbits),
             },
-            # {
-            #     'indexer': indexer.PQIndexer,
-            #     'build_param': {
-            #         'nsubq': nsubq,
-            #         'nsubqbits': 8,
-            #     },
-            #     'index_prefix': '%s/%s_%s_nsubq%d' % (
-            #         exp_dir, data.name, 'pq', nsubq),
-            # },
+            {
+                'indexer': indexer.PQIndexer,
+                'build_param': {
+                    'nsubq': nsubq,
+                    'nsubqbits': 8,
+                },
+                'index_prefix': '%s/%s_%s_nsubq%d' % (
+                    exp_dir, data.name, 'pq', nsubq),
+            },
             # {
             #     'indexer': indexer.IVFPQIndexer,
             #     'build_param': {
