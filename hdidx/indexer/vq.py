@@ -166,6 +166,8 @@ class IVFPQIndexer(PQIndexer):
         self.encoder.build(pardic)
 
     def set_storage(self, storage_type='mem', storage_parm=None):
+        if storage_parm is None:
+            storage_parm = dict()
         storage_parm['num_idx'] = self.encoder.ecdat['coarsek']
         self.storage = createStorage(storage_type, storage_parm)
 

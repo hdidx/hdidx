@@ -93,10 +93,10 @@ class IVFPQEncoder(PQEncoder):
         # training data
         vals = pardic['vals']
         # the number of coarse centroids
-        coarsek = pardic['coarsek']
+        coarsek = pardic.get('coarsek', 1024)
 
         logging.info('Building coarse quantizer - BEGIN')
-        coa_centroids = kmeans(vals, coarsek, niter=100)
+        coa_centroids = kmeans(vals.astype(np.float32), coarsek, niter=100)
         cids = pq_kmeans_assign(coa_centroids, vals)
         logging.info('Building coarse quantizer - DONE')
 
