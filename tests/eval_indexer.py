@@ -230,6 +230,14 @@ def main(args):
                     exp_dir, data.name, 'sh', nbits),
             },
             {
+                'indexer': indexer.MIHIndexer,
+                'build_param': {
+                    'nbits': nbits,
+                },
+                'index_prefix': '%s/%s_%s_nbits%d' % (
+                    exp_dir, data.name, 'mih', nbits),
+            },
+            {
                 'indexer': indexer.PQIndexer,
                 'build_param': {
                     'nsubq': nsubq,

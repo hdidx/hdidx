@@ -56,12 +56,12 @@ STORAGE_DIC = {
 
 
 def createStorage(storage_type, storage_parm=None):
-    coarsek = storage_parm.get('coarsek', 0) if storage_parm else 0
+    num_idx = storage_parm.get('num_idx', 0) if storage_parm else 0
 
     if storage_type == 'mem':
         # create inverted file storage
-        if coarsek > 0:
-            return [MemStorage() for i in xrange(coarsek)]
+        if num_idx > 0:
+            return [MemStorage() for i in xrange(num_idx)]
         # create normal storage
         else:
             return MemStorage()
@@ -70,9 +70,9 @@ def createStorage(storage_type, storage_parm=None):
         clear = storage_parm.get('clear', False)
 
         # create inverted file storage
-        if coarsek > 0:
-            env = lmdb.open(path, map_size=2**30, sync=False, max_dbs=coarsek)
-            return [LMDBStorage(env, clear, i) for i in xrange(coarsek)]
+        if num_idx > 0:
+            env = lmdb.open(path, map_size=2**30, sync=False, max_dbs=num_idx)
+            return [LMDBStorage(env, clear, i) for i in xrange(num_idx)]
         # create normal storage
         else:
             env = lmdb.open(path, map_size=2**30, sync=False, max_dbs=1)

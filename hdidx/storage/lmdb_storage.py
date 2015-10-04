@@ -31,6 +31,8 @@ class LMDBAccessor(object):
             txt.cursor(self.db).put(pack(ktype, key), pack(vtype, key))
 
     def setk(self, key, val, ktype):
+        # pkey = pack(ktype, key)
+        # print len(pkey), [ord(c) for c in pkey], unpack('i', pkey)[0]
         with self.env.begin(write=True) as txt:
             txt.cursor(self.db).put(pack(ktype, key), val)
 
@@ -101,6 +103,7 @@ class LMDBStorage(MemStorage):
                 keys = []
                 codes = []
                 for key, code in cursor:
+                    # print len(key), [ord(c) for c in key], unpack('i', key)[0]
                     keys.append(unpack('i', key)[0])
                     codes.append(pickle.loads(code))
                 self.keys = np.array(keys)

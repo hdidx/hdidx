@@ -30,7 +30,7 @@ import numpy
 from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.2.2',
+      version='0.2.2.1',
       author='WAN Ji',
       author_email='wanji@live.com',
       package_dir={'hdidx': 'hdidx'},
@@ -42,13 +42,23 @@ setup(name='hdidx',
       ],
 
       cmdclass={'build_ext': build_ext},
-      ext_modules=[Extension(
-          "hdidx._cext",
-          sources=[
-              "cext/_cext.pyx",
-              "cext/cext.c",
-          ],
-          include_dirs=[numpy.get_include(), "cext"])],
+      ext_modules=[
+          Extension(
+              "hdidx._cext",
+              sources=[
+                  "cext/_cext.pyx",
+                  "cext/cext.c",
+              ],
+              include_dirs=[numpy.get_include(), "cext"]),
+          Extension(
+              "hdidx._mih",
+              sources=[
+                  "cext/_mih.pyx",
+                  "cext/mih.cpp",
+              ],
+              language="c++",
+              include_dirs=[numpy.get_include(), "cext"])
+      ],
 
       scripts=[
           'tests/test_indexer.py',
