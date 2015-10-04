@@ -303,26 +303,9 @@ class MIHIndexer(Indexer):
                     continue
                 profiler.end()
 
-                # profiler.start("- filtering")    # time for
-                # filtered = mih.filtering(sub_dist, qry_keys, proced,
-                #                          self.tables, self.key_map)
-                # profiler.end()
-                # candidates = db_codes[idmap[filtered]]
-
-                # profiler.start("- calc")
-                # mih.fill_table(qry_code, candidates, filtered, ret_set)
-                # profiler.end()
                 mih.search_for_sub_dist(sub_dist, qry_keys, qry_code, proced,
                                         db_codes, idmap,
                                         self.tables, self.key_map, ret_set)
-
-                # profiler.start("- calc")    # time for
-                # cur_dist = list(cext.hamming(qry_code, candidates).reshape(-1))
-                # # print sub_dist, sorted(zip(cur_dist, filtered),
-                # #                     key=lambda x: x[0])[:10]
-                # for i, d in zip(filtered, cur_dist):
-                #     ret_set[d].append(i)
-                # profiler.end()
 
                 profiler.start("- rest")    # time for
                 acc += len(ret_set[hmdist])
