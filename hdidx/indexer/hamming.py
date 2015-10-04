@@ -14,7 +14,8 @@ Indexers for binary codes in Hamming space.
 import os
 import logging
 import cPickle as pickle
-import operator
+# import operator
+# from bitmap import BitMap
 
 import numpy as np
 
@@ -254,6 +255,19 @@ class MIHIndexer(Indexer):
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
+    def filtering(self, sub_dist, qry_keys, proced, tables, key_map):
+        filtered = []
+        for table, subcode in zip(tables, qry_keys[0]):
+            for mask in key_map[sub_dist]:
+                for cur_id in table.get(mask ^ subcode, []):
+                    # if not proced.test(cur_id):
+                    #     filtered.append(cur_id)
+                    #     proced.set(cur_id)
+                    if cur_id not in proced:
+                        filtered.append(cur_id)
+                        proced.add(cur_id)
+        return filtered
+
     def search(self, queries, topk=None, **kwargs):
         nq = queries.shape[0]
         nbits = self.encoder.ecdat['nbits']
@@ -274,54 +288,47 @@ class MIHIndexer(Indexer):
             qry_code = self.encoder.encode(queries[qry_id:qry_id+1])
             qry_keys = mih.get_keys_16bit(qry_code)
 
-            last_subth = -1
+            last_sub_dist = -1
             ret_set = [[] for i in xrange(nbits+1)]
             proced = set()
+            # proced = BitMap(db_codes.shape[0])
+            # proced = np.zeros(db_codes.shape[0] / 8 + 1, np.uint8)
             acc = 0
             profiler.end()
 
             for hmdist in xrange(nbits+1):
-                profiler.start("pre")    # time for
-                subth = hmdist / self.ntbls
-                if subth <= last_subth:
+                profiler.start("- pre")    # time for
+                sub_dist = hmdist / self.ntbls
+                if sub_dist <= last_sub_dist:
                     continue
                 profiler.end()
 
-                profiler.start("reduce")    # time for
-                # sel_keys = reduce(operator.concat, [
-                #     [
-                #         mask ^ subcode
-                #         for mask in self.key_map[subth]
-                #     ] for table, subcode in zip(self.tables, qry_keys[0])
-                # ])
-                candidates = reduce(operator.concat, [
-                    reduce(operator.concat, [
-                        table.get(mask ^ subcode, [])
-                        for mask in self.key_map[subth]
-                    ]) for table, subcode in zip(self.tables, qry_keys[0])
-                ])
-                profiler.end()
+                # profiler.start("- filtering")    # time for
+                # filtered = mih.filtering(sub_dist, qry_keys, proced,
+                #                          self.tables, self.key_map)
+                # profiler.end()
+                # candidates = db_codes[idmap[filtered]]
 
-                profiler.start("filter")    # time for
-                filtered = []
-                for cur_id in candidates:
-                    if cur_id not in proced:
-                        filtered.append(cur_id)
-                        proced.add(cur_id)
+                # profiler.start("- calc")
+                # mih.fill_table(qry_code, candidates, filtered, ret_set)
+                # profiler.end()
+                mih.search_for_sub_dist(sub_dist, qry_keys, qry_code, proced,
+                                        db_codes, idmap,
+                                        self.tables, self.key_map, ret_set)
 
-                candidates = db_codes[idmap[filtered]]
-                profiler.end()
+                # profiler.start("- calc")    # time for
+                # cur_dist = list(cext.hamming(qry_code, candidates).reshape(-1))
+                # # print sub_dist, sorted(zip(cur_dist, filtered),
+                # #                     key=lambda x: x[0])[:10]
+                # for i, d in zip(filtered, cur_dist):
+                #     ret_set[d].append(i)
+                # profiler.end()
 
-                profiler.start("calc")    # time for
-                cur_dist = list(cext.hamming(qry_code, candidates).reshape(-1))
-                # print subth, sorted(zip(cur_dist, filtered),
-                #                     key=lambda x: x[0])[:10]
-                for i, d in zip(filtered, cur_dist):
-                    ret_set[d].append(i)
+                profiler.start("- rest")    # time for
                 acc += len(ret_set[hmdist])
                 if acc >= topk:
                     break
-                last_subth = subth
+                last_sub_dist = sub_dist
                 profiler.end()
 
             profiler.start("result")    # time for getting final result

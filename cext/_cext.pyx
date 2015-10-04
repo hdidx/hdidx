@@ -24,7 +24,7 @@ cnp.import_array()
 cdef extern from "cext.h":
     void sumidxtab_core_cfunc(const cnp.float32_t * D, const cnp.uint8_t * blk,
         int nsq, int ksub, int cur_num, cnp.float32_t * out)
-    void hamming_core_cfunc(cnp.uint8_t * db, cnp.uint8_t * qry, int dim, int num,
+    void hamming_core_cfunc(cnp.uint8_t * qry, cnp.uint8_t * db, int dim, int num,
                             cnp.uint16_t * dist)
     void knn_count_core_cfunc(cnp.uint16_t * D, int numD, int maxD,
                               int topk, cnp.int32_t * out);
