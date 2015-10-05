@@ -13,9 +13,6 @@ Indexers for binary codes in Hamming space.
 
 import os
 import logging
-import cPickle as pickle
-# import operator
-# from bitmap import BitMap
 
 import numpy as np
 
@@ -201,6 +198,7 @@ class MIHIndexer(Indexer):
     def __init__(self, encoder=DEFAULT_HAMMING_ENCODER):
         Indexer.__init__(self)
         self.encoder = getattr(hdidx.encoder, encoder)()
+        self.indexer = None
         self.key_map = mih.get_key_map(16)
         self.set_storage()
 
@@ -211,24 +209,20 @@ class MIHIndexer(Indexer):
         self.encoder.build(pardic)
 
     def set_storage(self, storage_type='mem', storage_parm=None):
-        self.storage = createStorage(storage_type, storage_parm)
-        if storage_parm is None:
-            return
-        self.idx_path = storage_parm['path'] + ".mih"
-        if os.path.exists(self.idx_path):
-            with open(self.idx_path, 'rb') as idxf:
-                self.tables = pickle.load(idxf)
-            self.ntbls = len(self.tables)
-        else:
-            self.ntbls = self.encoder.ecdat['nbits'] / 16
-            self.tables = [dict() for i in xrange(self.ntbls)]
-            with open(self.idx_path, 'wb') as idxf:
-                pickle.dump(self.tables, idxf)
+        self.idx_path = storage_parm['path'] if storage_parm else None
+
+        if self.idx_path is not None:
+            nbits = self.encoder.ecdat['nbits']
+            self.ntbls = nbits / 16
+            self.indexer = mih.PyMultiIndexer(nbits, self.ntbls, 1000000)
+
+            if os.path.exists(self.idx_path):
+                self.indexer.load(self.idx_path)
 
     def add(self, vals, keys=None):
         num_vals = vals.shape[0]
         if keys is None:
-            num_base_items = self.storage.get_num_items()
+            num_base_items = self.indexer.get_num_items()
             keys = np.arange(num_base_items, num_base_items + num_vals,
                              dtype=np.int32)
         else:
@@ -239,42 +233,17 @@ class MIHIndexer(Indexer):
             cur_num = min(self.BLKSIZE, num_vals - start_id)
             logging.info("%8d/%d: %d" % (start_id, num_vals, cur_num))
             codes = self.encoder.encode(vals[start_id:start_id+cur_num, :])
-            self.storage.add(codes, keys[start_id:start_id+cur_num])
-            codes_16bit = mih.get_keys_16bit(codes)
-            for i in xrange(cur_num):
-                for j in xrange(self.ntbls):
-                    subcode = codes_16bit[i, j]
-                    if subcode in self.tables[j]:
-                        self.tables[j][subcode].append(start_id+i)
-                    else:
-                        self.tables[j][subcode] = [start_id+i]
+            self.indexer.add(codes)
+        logging.info("%8d/%d (Done!)" % (num_vals, num_vals))
 
-        with open(self.idx_path, 'wb') as idxf:
-            pickle.dump(self.tables, idxf)
+        self.indexer.save(self.idx_path)
 
     def remove(self, keys):
         raise Exception(self.ERR_UNIMPL)
 
-    def filtering(self, sub_dist, qry_keys, proced, tables, key_map):
-        filtered = []
-        for table, subcode in zip(tables, qry_keys[0]):
-            for mask in key_map[sub_dist]:
-                for cur_id in table.get(mask ^ subcode, []):
-                    # if not proced.test(cur_id):
-                    #     filtered.append(cur_id)
-                    #     proced.set(cur_id)
-                    if cur_id not in proced:
-                        filtered.append(cur_id)
-                        proced.add(cur_id)
-        return filtered
-
     def search(self, queries, topk=None, **kwargs):
         nq = queries.shape[0]
-        nbits = self.encoder.ecdat['nbits']
         # qry_codes = self.encoder.encode(queries)
-        db_codes = self.storage.get_codes()
-        idsquerybase = self.storage.get_keys()
-        idmap = idsquerybase.argsort()
 
         dis = np.ones((nq, topk), np.single) * np.inf
         ids = np.ones((nq, topk), np.int32) * -1
@@ -286,41 +255,15 @@ class MIHIndexer(Indexer):
         for qry_id in range(nq):
             profiler.start("encoding")    # time for getting final result
             qry_code = self.encoder.encode(queries[qry_id:qry_id+1])
-            qry_keys = mih.get_keys_16bit(qry_code)
-
-            last_sub_dist = -1
-            ret_set = [[] for i in xrange(nbits+1)]
-            proced = set()
-            # proced = BitMap(db_codes.shape[0])
-            # proced = np.zeros(db_codes.shape[0] / 8 + 1, np.uint8)
-            acc = 0
             profiler.end()
 
-            for hmdist in xrange(nbits+1):
-                profiler.start("- pre")    # time for
-                sub_dist = hmdist / self.ntbls
-                if sub_dist <= last_sub_dist:
-                    continue
-                profiler.end()
-
-                mih.search_for_sub_dist(sub_dist, qry_keys, qry_code, proced,
-                                        db_codes, idmap,
-                                        self.tables, self.key_map, ret_set)
-
-                profiler.start("- rest")    # time for
-                acc += len(ret_set[hmdist])
-                if acc >= topk:
-                    break
-                last_sub_dist = sub_dist
-                profiler.end()
+            profiler.start("search")    # time for getting final result
+            cur_ids, cur_dis = self.indexer.search(qry_code, topk)
+            profiler.end()
 
             profiler.start("result")    # time for getting final result
-            shift = 0
-            for hmdist in xrange(nbits+1):
-                cur_num = min(topk - shift, len(ret_set[hmdist]))
-                dis[qry_id, shift:shift+cur_num] = hmdist
-                ids[qry_id, shift:shift+cur_num] = ret_set[hmdist][:cur_num]
-                shift += cur_num
+            ids[qry_id, :] = cur_ids
+            dis[qry_id, :] = cur_dis
             profiler.end()
 
             if (qry_id+1) % interval == 0:

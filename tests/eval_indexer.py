@@ -190,7 +190,7 @@ def eval_indexer(data, indexer_param, dsname, topk):
         ids, dis = idx.search(data.query, topk=topk, **search_param)
         toc = time.time() - tic
         save_result(rslt_path, ids, dis)
-        logging.info("\tDone!")
+        logging.info("\tDone! (%.3fs)" % toc)
     return compute_stats(data.groundtruth, ids, topk), toc
 
 

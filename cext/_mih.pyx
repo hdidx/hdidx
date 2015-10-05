@@ -76,3 +76,44 @@ def search_for_sub_dist(sub_dist, qry_keys, qry_code, proced,
                                    <cnp.uint8_t *> cnp.PyArray_DATA(db_codes[idmap[cur_id]]),
                                    nbits)
                     ret_set[dist].append(cur_id)
+
+cdef extern from "mih.h":
+    cdef cppclass MultiIndexer:
+        MultiIndexer(int, int, int)
+        int get_num_items()
+        int add(cnp.uint8_t * codes, int num)
+        int search(cnp.uint8_t * query, cnp.uint32_t * ids,
+                   cnp.uint16_t * dis, int topk)
+        int load(char * codes)
+        int save(char * codes)
+
+cdef class PyMultiIndexer:
+    cdef MultiIndexer * thisptr
+
+    def __cinit__(self, int nbits, int ntbls, int capacity=0):
+        self.thisptr = new MultiIndexer(nbits, ntbls, capacity)
+
+    def __dealloc__(self):
+        del self.thisptr
+
+    def get_num_items(self):
+        return self.thisptr.get_num_items()
+
+    def add(self, cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] codes):
+        return self.thisptr.add(<cnp.uint8_t *> cnp.PyArray_DATA(codes),
+                                codes.shape[0])
+
+    def search(self, cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] qry, int topk):
+        ids = np.zeros(topk, np.uint32)
+        dis = np.zeros(topk, np.uint16)
+        self.thisptr.search(<cnp.uint8_t *> cnp.PyArray_DATA(qry),
+                            <cnp.uint32_t *> cnp.PyArray_DATA(ids),
+                            <cnp.uint16_t *> cnp.PyArray_DATA(dis),
+                            topk)
+        return ids, dis
+
+    def load(self, idx_path):
+        return self.thisptr.load(<char *> idx_path)
+
+    def save(self, idx_path):
+        return self.thisptr.save(<char *> idx_path)
