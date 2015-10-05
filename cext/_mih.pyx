@@ -16,6 +16,8 @@ DESCRIPTION = """
 # import both numpy and the Cython declarations for numpy
 import numpy as np
 cimport numpy as cnp
+from libc.stdint cimport int8_t, uint8_t, \
+    int16_t, uint16_t, int32_t, uint32_t
 import operator
 from itertools import izip as zip
 
@@ -26,11 +28,11 @@ cnp.import_array()
 
 # cdefine the signature of our c function
 cdef extern from "mih.h":
-    int get_keys_dist(cnp.uint32_t slice, int len,
-                      int dist, cnp.uint32_t * keys)
+    int get_keys_dist(uint32_t slice, int len,
+                      int dist, uint32_t * keys)
 
 cdef extern from "hamdist.h":
-    cnp.uint16_t hamdist(cnp.uint8_t * qry, cnp.uint8_t * db, int dim)
+    uint16_t hamdist(uint8_t * qry, uint8_t * db, int dim)
 
 
 def c(n,k):
@@ -45,7 +47,7 @@ def get_key_map(nbits):
     for d in xrange(nbits+1):
         codes = np.zeros(c(nbits, d), dtype=np.uint32)
         num = get_keys_dist(0, nbits, d,
-                            <cnp.uint32_t*> cnp.PyArray_DATA(codes))
+                            <uint32_t *> cnp.PyArray_DATA(codes))
         if num != codes.shape[0]:
             raise Exception("Memory leak!!!")
         out.append(codes)
@@ -72,8 +74,8 @@ def search_for_sub_dist(sub_dist, qry_keys, qry_code, proced,
                 #     proced.set(cur_id)
                 if cur_id not in proced:
                     proced.add(cur_id)
-                    dist = hamdist(<cnp.uint8_t *> cnp.PyArray_DATA(qry_code),
-                                   <cnp.uint8_t *> cnp.PyArray_DATA(db_codes[idmap[cur_id]]),
+                    dist = hamdist(<uint8_t *> cnp.PyArray_DATA(qry_code),
+                                   <uint8_t *> cnp.PyArray_DATA(db_codes[idmap[cur_id]]),
                                    nbits)
                     ret_set[dist].append(cur_id)
 
@@ -81,9 +83,9 @@ cdef extern from "mih.h":
     cdef cppclass MultiIndexer:
         MultiIndexer(int, int, int)
         int get_num_items()
-        int add(cnp.uint8_t * codes, int num)
-        int search(cnp.uint8_t * query, cnp.int32_t * ids,
-                   cnp.int16_t * dis, int topk)
+        int add(uint8_t * codes, int num)
+        int search(uint8_t * query, int32_t * ids,
+                   int16_t * dis, int topk)
         int load(char * codes)
         int save(char * codes)
 
@@ -99,16 +101,16 @@ cdef class PyMultiIndexer:
     def get_num_items(self):
         return self.thisptr.get_num_items()
 
-    def add(self, cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] codes):
-        return self.thisptr.add(<cnp.uint8_t *> cnp.PyArray_DATA(codes),
+    def add(self, cnp.ndarray[uint8_t, ndim=2, mode="c"] codes):
+        return self.thisptr.add(<uint8_t *> cnp.PyArray_DATA(codes),
                                 codes.shape[0])
 
-    def search(self, cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] qry, int topk):
+    def search(self, cnp.ndarray[uint8_t, ndim=2, mode="c"] qry, int topk):
         ids = np.zeros(topk, np.int32)
         dis = np.zeros(topk, np.int16)
-        self.thisptr.search(<cnp.uint8_t *> cnp.PyArray_DATA(qry),
-                            <cnp.int32_t *> cnp.PyArray_DATA(ids),
-                            <cnp.int16_t *> cnp.PyArray_DATA(dis),
+        self.thisptr.search(<uint8_t *> cnp.PyArray_DATA(qry),
+                            <int32_t *> cnp.PyArray_DATA(ids),
+                            <int16_t *> cnp.PyArray_DATA(dis),
                             topk)
         return ids, dis
 

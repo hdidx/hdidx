@@ -20,7 +20,7 @@ using namespace std;
 
 
 int get_keys_dist(uint32_t slice, int len, int dist, uint32_t * keys) {
-  int flags[len];
+  int * flags = new int[len];
   int count = 0;
   for (int32_t j=0; j<dist; j++) {
     flags[j] = 0;
@@ -37,6 +37,7 @@ int get_keys_dist(uint32_t slice, int len, int dist, uint32_t * keys) {
     }
     keys[count++] = key;
   } while (std::next_permutation(flags, flags+len));
+  delete [] flags;
   return count;
 }
 
@@ -168,7 +169,7 @@ int MultiIndexer::add(uint8_t * codes, int num) {
 }
 
 int MultiIndexer::search(uint8_t * query, int32_t * ids, int16_t * dis, int topk) const {
-  vector<uint32_t> v_ret[nbits_+1];
+  vector<vector<uint32_t> > v_ret(nbits_+1);
   int sublen_ = nbits_ / ntbls_;
 
   int acc = 0;

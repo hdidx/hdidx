@@ -29,6 +29,7 @@ def runcmd(cmd):
     """
 
     logging.info("%s" % cmd)
+    return
     os.system(cmd)
 
 

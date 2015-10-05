@@ -83,6 +83,8 @@ def fast_euclidean(feat, query, featl2norm):
     """
     N = feat.shape[0]
     D = feat.shape[1]
+    feat = np.require(feat, dtype=np.float32)
+    query = np.require(query, dtype=np.float32)
     dist = np.empty((1, N), dtype=np.float32)
     # dist = featl2norm.astype(np.float32)
     fast_euclidean_core_cfunc(<cnp.float32_t *> cnp.PyArray_DATA(feat),

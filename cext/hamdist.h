@@ -33,7 +33,7 @@ static const int BIT_CNT_MAP[] = {
 /**
  * hamming distance of codes with arbitrary length
  */
-int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
+static int hamdist(const uint8_t * a, const uint8_t * b, int nbytes) {
   int dist = 0;
   int i;
 
