@@ -5,20 +5,10 @@
   > Descriptions: 
  ************************************************************************/
 
-#ifdef _WIN32
-typedef unsigned char  uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int   uint32_t;
-typedef unsigned long  uint64_t;
+#ifndef _CEXT_H_
+#define _CEXT_H_
 
-typedef char  int8_t;
-typedef short int16_t;
-typedef int   int32_t;
-typedef long  int64_t;
-#else
-#include <stdint.h>
-#endif
-
+#include "common.h"
 
 void sumidxtab_core_cfunc(const float * D, const uint8_t * blk,
     int nsq, int ksub, int cur_num, float * out);
@@ -32,3 +22,5 @@ void knn_count_core_cfunc(const uint16_t * D, int numD, int maxD,
 void fast_euclidean_core_cfunc(const float * feat, const float * query,
     const float * featl2norm, int dim, int num,
     float * dist);
+
+#endif
