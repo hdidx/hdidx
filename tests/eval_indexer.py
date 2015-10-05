@@ -190,7 +190,7 @@ def eval_indexer(data, indexer_param, dsname, topk):
         ids, dis = idx.search(data.query, topk=topk, **search_param)
         toc = time.time() - tic
         save_result(rslt_path, ids, dis)
-        logging.info("\tDone!")
+        logging.info("\tDone! (%.3fs)" % toc)
     return compute_stats(data.groundtruth, ids, topk), toc
 
 
@@ -237,15 +237,15 @@ def main(args):
                 'index_prefix': '%s/%s_%s_nbits%d' % (
                     exp_dir, data.name, 'mih', nbits),
             },
-            {
-                'indexer': indexer.PQIndexer,
-                'build_param': {
-                    'nsubq': nsubq,
-                    'nsubqbits': 8,
-                },
-                'index_prefix': '%s/%s_%s_nsubq%d' % (
-                    exp_dir, data.name, 'pq', nsubq),
-            },
+            # {
+            #     'indexer': indexer.PQIndexer,
+            #     'build_param': {
+            #         'nsubq': nsubq,
+            #         'nsubqbits': 8,
+            #     },
+            #     'index_prefix': '%s/%s_%s_nsubq%d' % (
+            #         exp_dir, data.name, 'pq', nsubq),
+            # },
             # {
             #     'indexer': indexer.IVFPQIndexer,
             #     'build_param': {

@@ -33,7 +33,6 @@ class Bucket {
     }
     int append(IDType id) {
       if (next_ >= cap_) {
-        // cout << "reallocate: " << cap_ << " -> " << (cap_+step_) << endl;
         cap_ += step_;
         IDType * tmp = ids_;
         ids_ = new IDType[cap_];
@@ -88,6 +87,7 @@ class MultiIndexer {
     uint32_t * key_map_;
     vector<int> key_start_;
     vector<int> key_end_;
+    uint8_t * bitmap_;
 };
 
 

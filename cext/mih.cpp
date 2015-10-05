@@ -77,6 +77,8 @@ uint32_t subits(const uint8_t * bits, int pos, int len) {
 MultiIndexer::MultiIndexer(int nbits, int ntbls, int capacity) :
   nbits_(nbits), ntbls_(ntbls), capacity_(capacity) {
 
+  bitmap_ = NULL;
+
   code_len_ = (nbits_ + 7) / 8;
 
   nbkts_ = 1;
@@ -126,6 +128,9 @@ MultiIndexer::~MultiIndexer() {
   if (key_map_ != NULL) {
     delete [] key_map_;
   }
+  if (bitmap_ != NULL) {
+    delete [] bitmap_;
+  }
 }
 
 int MultiIndexer::add(uint8_t * codes, int num) {
@@ -146,60 +151,45 @@ int MultiIndexer::add(uint8_t * codes, int num) {
   /**
    * Insert codes into each hash table
    */
-  vector<int> count;
-  for (int i=0; i<ntbls_; i++) {
-    count.push_back(0);
-  }
   for (uint32_t id=ncodes_; id<ncodes_+num; id++) {
     uint8_t * code = codes_ + id * code_len_;
-    // for (int i=0; i<code_len_; i++) {
-    //   printf("%d\t", code[i]);
-    // }
-    // cout << endl;
     for (int i=0; i<ntbls_; i++) {
       uint32_t subkey = subits(code, sublen_ * i, sublen_);
-      // cout << subkey << '\t';
-      if (subkey == 0) {
-        count[i]++;
-      }
       tables_[i][subkey].append(id);
     }
   }
-  for (int i=0; i<ntbls_; i++) {
-    cout << count[i] << '\t';
-  }
-  cout << endl;
 
   ncodes_ += num;
+  if (bitmap_ != NULL) {
+    delete [] bitmap_;
+  }
+  bitmap_ = new uint8_t[ncodes_];
 }
 
 int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int topk) const {
-  set<uint32_t> proced;
+  vector<uint32_t> v_ret[nbits_+1];
   int sublen_ = nbits_ / ntbls_;
-  vector<uint32_t> subcodes;
-  for (int i=0; i<ntbls_; i++) {
-    subcodes.push_back(subits(query, sublen_ * i, sublen_));
-  }
-
-  vector<vector<uint16_t> > v_ret;
-  for (int d=0; d<=nbits_; d++) {
-    v_ret.push_back(vector<uint16_t>());
-  }
 
   int acc = 0;
   int last_sub_dist = -1;
+  memset(bitmap_, 0, ncodes_);
+  // search for different distance
   for (int d=0; d<=nbits_; d++) {
     int sub_dist = d / ntbls_;
+    // only update v_ret when sub_dist chaged
     if (sub_dist != last_sub_dist) {
+      // scan the tables
       for (int i=0; i<ntbls_; i++) {
+        uint32_t subcode = subits(query, sublen_ * i, sublen_);
+        // scan the buckets with distance `sub_dist` in each table
         for (int t=key_start_[sub_dist]; t<key_end_[sub_dist]; t++) {
-          uint32_t sub_key = key_map_[t] ^ subcodes[i];
-          for (int j=0; j<tables_[i][sub_key].size(); j++) {
-            uint32_t id = tables_[i][sub_key].get(j);
-            if (proced.find(id) != proced.end()) {
+          Bucket<uint32_t> & bucket = tables_[i][key_map_[t] ^ subcode];
+          for (int j=0; j<bucket.size(); j++) {
+            uint32_t id = bucket.get(j);
+            if (bitmap_[id]) {
               continue;
             }
-            proced.insert(id);
+            bitmap_[id] = 1;
             uint16_t dist = hamdist(query, codes_ + id * code_len_, code_len_);
             v_ret[dist].push_back(id);
           }
@@ -220,11 +210,23 @@ int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int to
 }
 
 int MultiIndexer::load(const char * idx_path) {
-  cout << "load from " << idx_path << endl;
+  return 0;
+  FILE * fp = fopen(idx_path, "rb");
+  if (fp == NULL) {
+    fprintf(stderr, "Error: cannot open file %s for writing!\n", idx_path);
+    return -1;
+  }
+  fclose(fp);
   return 0;
 }
 
 int MultiIndexer::save(const char * idx_path) const {
-  cout << "save to " << idx_path << endl;
+  return 0;
+  FILE * fp = fopen(idx_path, "wb");
+  if (fp == NULL) {
+    fprintf(stderr, "Error: cannot open file %s for writing!\n", idx_path);
+    return -1;
+  }
+  fclose(fp);
   return 0;
 }
