@@ -22,6 +22,10 @@
       <h1>
 <a id="hdidx-indexing-high-dimensional-data" class="anchor" href="#hdidx-indexing-high-dimensional-data" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>HDIdx</strong>: Indexing High-Dimensional Data</h1>
 
+<p><a href="https://pypi.python.org/pypi/hdidx/"><img src="https://img.shields.io/pypi/v/hdidx.svg?style=flat-square" alt="pypi"></a>
+<a href="https://pypi.python.org/pypi/hdidx/"><img src="https://img.shields.io/pypi/dm/hdidx.svg?style=flat-square" alt="downloads_month"></a>
+<a href="https://raw.githubusercontent.com/wanji/hdidx/master/LICENSE.md"><img src="https://img.shields.io/pypi/l/hdidx.svg?style=flat-square" alt="license"></a></p>
+
 <h2>
 <a id="what-is-hdidx" class="anchor" href="#what-is-hdidx" aria-hidden="true"><span class="octicon octicon-link"></span></a>What is <strong>HDIdx</strong>?</h2>
 
@@ -50,7 +54,7 @@ When a query vector comes, it will be mapped to hash codes by the same <code>Enc
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
 
-<p><strong>HDIdx</strong> can be installed via <code>pip</code>:</p>
+<p><strong>HDIdx</strong> can be installed by <code>pip</code>:</p>
 
 <div class="highlight highlight-source-shell"><pre>[sudo] pip install hdidx</pre></div>
 
@@ -70,7 +74,7 @@ When a query vector comes, it will be mapped to hash codes by the same <code>Enc
 <li><a href="http://www.microsoft.com/en-us/download/details.aspx?id=44266">Microsoft Visual C++ Compiler for Python</a></li>
 </ul>
 
-<p>After install the above mentioned software, hdidx can be installed via <code>pip</code> in the <em>Anaconda Command Prompt</em>.</p>
+<p>After install the above mentioned software, download <a href="http://msinttypes.googlecode.com/svn/trunk/stdint.h"><code>stdint.h</code></a> and put it under the <code>include</code> folder of Visual C++, e.g. <code>C:\Users\xxx\AppData\Local\Programs\Common\Microsoft\Visual C++ for Python\9.0\VC\include</code>. Then hdidx can be installed by <code>pip</code> from the <em>Anaconda Command Prompt</em>.</p>
 
 <h2>
 <a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
@@ -83,21 +87,23 @@ When a query vector comes, it will be mapped to hash codes by the same <code>Enc
 <span class="pl-k">import</span> numpy <span class="pl-k">as</span> np
 
 <span class="pl-c"># generating sample data</span>
-ndim <span class="pl-k">=</span> <span class="pl-c1">256</span>     <span class="pl-c"># dimension of features</span>
+ndim <span class="pl-k">=</span> <span class="pl-c1">16</span>      <span class="pl-c"># dimension of features</span>
 ndb <span class="pl-k">=</span> <span class="pl-c1">10000</span>    <span class="pl-c"># number of dababase items</span>
-nqry <span class="pl-k">=</span> <span class="pl-c1">120</span>     <span class="pl-c"># number of queries</span>
+nqry <span class="pl-k">=</span> <span class="pl-c1">10</span>      <span class="pl-c"># number of queries</span>
 
-X_db <span class="pl-k">=</span> np.random.random((ndb, ndim)).astype(np.float64)
-X_qry <span class="pl-k">=</span> np.random.random((nqry, ndim)).astype(np.float32)
+X_db <span class="pl-k">=</span> np.random.random((ndb, ndim))
+X_qry <span class="pl-k">=</span> np.random.random((nqry, ndim))
 
 <span class="pl-c"># create Product Quantization Indexer</span>
-idx <span class="pl-k">=</span> hdidx.indexer.PQIndexer()
+idx <span class="pl-k">=</span> hdidx.indexer.IVFPQIndexer()
 <span class="pl-c"># build indexer</span>
 idx.build({<span class="pl-s"><span class="pl-pds">'</span>vals<span class="pl-pds">'</span></span>: X_db, <span class="pl-s"><span class="pl-pds">'</span>nsubq<span class="pl-pds">'</span></span>: <span class="pl-c1">8</span>})
 <span class="pl-c"># add database items to the indexer</span>
 idx.add(X_db)
-<span class="pl-c"># searching in the database, and return top-100 items for each query</span>
-idx.search(X_qry, <span class="pl-c1">100</span>)</pre></div>
+<span class="pl-c"># searching in the database, and return top-10 items for each query</span>
+ids, dis <span class="pl-k">=</span> idx.search(X_qry, <span class="pl-c1">10</span>)
+<span class="pl-k">print</span> ids
+<span class="pl-k">print</span> dis</pre></div>
 
 <h2>
 <a id="reference" class="anchor" href="#reference" aria-hidden="true"><span class="octicon octicon-link"></span></a>Reference</h2>
@@ -127,15 +133,6 @@ idx.search(X_qry, <span class="pl-c1">100</span>)</pre></div>
               var pageTracker = _gat._getTracker("UA-67797434-1");
             pageTracker._trackPageview();
             } catch(err) {}
-          </script>
-          <script>
-          var _hmt = _hmt || [];
-          (function() {
-            var hm = document.createElement("script");
-            hm.src = "//hm.baidu.com/hm.js?0d63c78cdc9c1f91d06dcf7308d7d608";
-            var s = document.getElementsByTagName("script")[0]; 
-            s.parentNode.insertBefore(hm, s);
-          })();
           </script>
 
   </body>
