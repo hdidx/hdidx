@@ -60,9 +60,9 @@ import hdidx
 import numpy as np
 
 # generating sample data
-ndim = 256     # dimension of features
+ndim = 16      # dimension of features
 ndb = 10000    # number of dababase items
-nqry = 120     # number of queries
+nqry = 10      # number of queries
 
 X_db = np.random.random((ndb, ndim))
 X_qry = np.random.random((nqry, ndim))
@@ -73,8 +73,10 @@ idx = hdidx.indexer.IVFPQIndexer()
 idx.build({'vals': X_db, 'nsubq': 8})
 # add database items to the indexer
 idx.add(X_db)
-# searching in the database, and return top-100 items for each query
-idx.search(X_qry, 100)
+# searching in the database, and return top-10 items for each query
+ids, dis = idx.search(X_qry, 10)
+print ids
+print dis
 ```
 
 ## Reference

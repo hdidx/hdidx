@@ -58,7 +58,7 @@ this query vector.
 Installation
 ------------
 
-**HDIdx** can be installed via ``pip``:
+**HDIdx** can be installed by ``pip``:
 
 .. code:: bash
 
@@ -86,8 +86,12 @@ General dependencies:
 -  `Microsoft Visual C++ Compiler for
    Python <http://www.microsoft.com/en-us/download/details.aspx?id=44266>`__
 
-After install the above mentioned software, hdidx can be installed via
-``pip`` in the *Anaconda Command Prompt*.
+After install the above mentioned software, download
+```stdint.h`` <http://msinttypes.googlecode.com/svn/trunk/stdint.h>`__
+and put it under the ``include`` folder of Visual C++, e.g.
+``C:\Users\xxx\AppData\Local\Programs\Common\Microsoft\Visual C++ for Python\9.0\VC\include``.
+Then hdidx can be installed by ``pip`` from the *Anaconda Command
+Prompt*.
 
 Example
 -------
@@ -104,9 +108,9 @@ for more examples.
     import numpy as np
 
     # generating sample data
-    ndim = 256     # dimension of features
+    ndim = 16      # dimension of features
     ndb = 10000    # number of dababase items
-    nqry = 120     # number of queries
+    nqry = 10      # number of queries
 
     X_db = np.random.random((ndb, ndim))
     X_qry = np.random.random((nqry, ndim))
@@ -117,8 +121,10 @@ for more examples.
     idx.build({'vals': X_db, 'nsubq': 8})
     # add database items to the indexer
     idx.add(X_db)
-    # searching in the database, and return top-100 items for each query
-    idx.search(X_qry, 100)
+    # searching in the database, and return top-10 items for each query
+    ids, dis = idx.search(X_qry, 10)
+    print ids
+    print dis
 
 Reference
 ---------
@@ -131,4 +137,3 @@ Reference
     [2] Weiss, Yair, Antonio Torralba, and Rob Fergus.
         "Spectral hashing."
         In Advances in neural information processing systems, pp. 1753-1760. 2009.
-
