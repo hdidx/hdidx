@@ -19,18 +19,18 @@ using namespace std;
 #include "hamdist.h"
 
 
-int get_keys_dist(uint32_t slice, uint32_t len, uint32_t dist, uint32_t * keys) {
+int get_keys_dist(uint32_t slice, int len, int dist, uint32_t * keys) {
   int flags[len];
   int count = 0;
-  for (uint32_t j=0; j<dist; j++) {
+  for (int32_t j=0; j<dist; j++) {
     flags[j] = 0;
   }
-  for (uint32_t j=dist; j<len; j++) {
+  for (int32_t j=dist; j<len; j++) {
     flags[j] = 1;
   }
   do {
-    uint32_t key = slice;
-    for (uint32_t k = 0; k < len; ++k) {
+    int32_t key = slice;
+    for (int32_t k = 0; k < len; ++k) {
       if (!flags[k]) {
         key ^= 1<<k;
       }
@@ -167,7 +167,7 @@ int MultiIndexer::add(uint8_t * codes, int num) {
   return 0;
 }
 
-int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int topk) const {
+int MultiIndexer::search(uint8_t * query, int32_t * ids, int16_t * dis, int topk) const {
   vector<uint32_t> v_ret[nbits_+1];
   int sublen_ = nbits_ / ntbls_;
 
@@ -218,16 +218,17 @@ int MultiIndexer::load(const char * idx_path) {
     return -1;
   }
 
+  int rdcnt = 0;
   uint64_t rsrved;
   uint32_t ntbls, nbits;
   // skip 8 bytes reserved field
-  fread(&rsrved, sizeof(rsrved), 1, fp);
+  rdcnt += fread(&rsrved, sizeof(rsrved), 1, fp);
   // load number of tables/bits/codes
-  fread(&ntbls, sizeof(ntbls), 1, fp);
-  fread(&nbits, sizeof(nbits), 1, fp);
-  fread(&ncodes_, sizeof(ncodes_), 1, fp);
+  rdcnt += fread(&ntbls, sizeof(ntbls), 1, fp);
+  rdcnt += fread(&nbits, sizeof(nbits), 1, fp);
+  rdcnt += fread(&ncodes_, sizeof(ncodes_), 1, fp);
   // skip 8 bytes reserved field
-  fread(&rsrved, sizeof(rsrved), 1, fp);
+  rdcnt += fread(&rsrved, sizeof(rsrved), 1, fp);
   assert(nbits_ == nbits);
   assert(ntbls_ == ntbls);
 
@@ -239,7 +240,7 @@ int MultiIndexer::load(const char * idx_path) {
   }
   capacity_ = ncodes_;
   codes_ = new uint8_t[ncodes_ * code_len_];
-  int rdcnt = fread(codes_, code_len_, ncodes_, fp);
+  rdcnt = fread(codes_, code_len_, ncodes_, fp);
   fprintf(stderr, "\t%d codes loaded!\n", rdcnt);
   /**
    * init bitmap
@@ -254,16 +255,16 @@ int MultiIndexer::load(const char * idx_path) {
    */
   uint64_t bid;
   int bucket_size;
-  fread(&bid, sizeof(bid), 1, fp);
+  rdcnt = fread(&bid, sizeof(bid), 1, fp);
   while (bid != 0xffffffffffffffff) {
-    fread(&bucket_size, sizeof(bucket_size), 1, fp);
+    rdcnt += fread(&bucket_size, sizeof(bucket_size), 1, fp);
     buckets_[bid].reserve(bucket_size);
     // if (bid % 1000 == 0) 
     //   fprintf(stderr, "bid/bcnt: %lu\t%d\n", bid, bucket_size);
-    fread(buckets_[bid].ids(), sizeof(buckets_[bid].ids()[0]),
+    rdcnt += fread(buckets_[bid].ids(), sizeof(buckets_[bid].ids()[0]),
         bucket_size, fp);
     buckets_[bid].size() = bucket_size;
-    fread(&bid, sizeof(bid), 1, fp);
+    rdcnt += fread(&bid, sizeof(bid), 1, fp);
   }
 
   fclose(fp);

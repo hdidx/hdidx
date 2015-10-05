@@ -16,7 +16,7 @@ using namespace std;
 
 #include "common.h"
 
-int get_keys_dist(uint32_t slice, uint32_t len, uint32_t dist, uint32_t * keys);
+int get_keys_dist(uint32_t slice, int len, int dist, uint32_t * keys);
 
 
 template <typename IDType>
@@ -96,7 +96,7 @@ class MultiIndexer {
     int get_num_items() { return ncodes_; }
 
     int add(uint8_t * codes, int num);
-    int search(uint8_t * query, uint32_t * ids, uint16_t * dis, int topk) const;
+    int search(uint8_t * query, int32_t * ids, int16_t * dis, int topk) const;
 
     int load(const char * idx_path);
     int save(const char * idx_path) const;

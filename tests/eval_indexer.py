@@ -49,6 +49,8 @@ def getargs():
                         help="retrieval `topk` nearest neighbors")
     parser.add_argument("--coarsek", type=int, default=1024,
                         help="size of the coarse codebook for IVFPQ")
+    parser.add_argument("--eval_idx", type=int, default=-1,
+                        help="index of v_indexer_param, -1 means all")
     parser.add_argument("--log", type=str, default="INFO",
                         help="log level")
 
@@ -67,6 +69,8 @@ class Dataset(object):
         self.nbae = self.base.shape[0]
         self.nqry = self.query.shape[0]
         self.name = data_path.split("/")[-1].split(".")[0]
+        # del self.base
+        # del self.learn
 
 
 def compute_stats_recall(ids_gnd, ids_qry, k):
@@ -161,17 +165,18 @@ def eval_indexer(data, indexer_param, dsname, topk):
         else build_param['nsubq'] * 8
     logging.info("\tnumber of bits: %d" % nbits)
 
-    build_param['vals'] = data.learn
-
+    runcmd("sh watch_mem.sh %d %s.mem &" % (os.getpid(), index_prefix))
     idx = CurIndexer()
     if os.path.exists(info_path):
         idx.load(info_path)
     else:
+        build_param['vals'] = data.learn
         idx.build(build_param)
         idx.save(info_path)
 
     do_add = not os.path.exists(lmdb_path)
 
+    runcmd("sleep 5")
     idx.set_storage('lmdb', {
         'path': lmdb_path,
         'clear': do_add,
@@ -191,6 +196,8 @@ def eval_indexer(data, indexer_param, dsname, topk):
         toc = time.time() - tic
         save_result(rslt_path, ids, dis)
         logging.info("\tDone! (%.3fs)" % toc)
+    runcmd("kill -9 `ps -ef | grep %d | grep watch_mem.sh | awk '{print $2}'`"
+           % os.getpid())
     return compute_stats(data.groundtruth, ids, topk), toc
 
 
@@ -260,6 +267,9 @@ def main(args):
                     exp_dir, data.name, 'ivfpq', nsubq, args.coarsek),
             },
         ]
+
+        if args.eval_idx >= 0:
+            v_indexer_param = [v_indexer_param[args.eval_idx]]
 
         for indexer_param in v_indexer_param:
             v_recall, time_cost = eval_indexer(data, indexer_param,

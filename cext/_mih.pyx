@@ -26,8 +26,8 @@ cnp.import_array()
 
 # cdefine the signature of our c function
 cdef extern from "mih.h":
-    int get_keys_dist(cnp.uint32_t slice, cnp.uint32_t len,
-                      cnp.uint32_t dist,  cnp.uint32_t * keys);
+    int get_keys_dist(cnp.uint32_t slice, int len,
+                      int dist, cnp.uint32_t * keys)
 
 cdef extern from "hamdist.h":
     cnp.uint16_t hamdist(cnp.uint8_t * qry, cnp.uint8_t * db, int dim)
@@ -82,8 +82,8 @@ cdef extern from "mih.h":
         MultiIndexer(int, int, int)
         int get_num_items()
         int add(cnp.uint8_t * codes, int num)
-        int search(cnp.uint8_t * query, cnp.uint32_t * ids,
-                   cnp.uint16_t * dis, int topk)
+        int search(cnp.uint8_t * query, cnp.int32_t * ids,
+                   cnp.int16_t * dis, int topk)
         int load(char * codes)
         int save(char * codes)
 
@@ -104,11 +104,11 @@ cdef class PyMultiIndexer:
                                 codes.shape[0])
 
     def search(self, cnp.ndarray[cnp.uint8_t, ndim=2, mode="c"] qry, int topk):
-        ids = np.zeros(topk, np.uint32)
-        dis = np.zeros(topk, np.uint16)
+        ids = np.zeros(topk, np.int32)
+        dis = np.zeros(topk, np.int16)
         self.thisptr.search(<cnp.uint8_t *> cnp.PyArray_DATA(qry),
-                            <cnp.uint32_t *> cnp.PyArray_DATA(ids),
-                            <cnp.uint16_t *> cnp.PyArray_DATA(dis),
+                            <cnp.int32_t *> cnp.PyArray_DATA(ids),
+                            <cnp.int16_t *> cnp.PyArray_DATA(dis),
                             topk)
         return ids, dis
 
