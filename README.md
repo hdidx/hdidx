@@ -26,7 +26,7 @@ When a query vector comes, it will be mapped to hash codes by the same `Encoder`
 
 ## Installation
 
-**HDIdx** can be installed via `pip`:
+**HDIdx** can be installed by `pip`:
 
 ```bash
 [sudo] pip install hdidx
@@ -47,7 +47,7 @@ General dependencies:
 - [Anaconda](https://store.continuum.io/cshop/anaconda/)
 - [Microsoft Visual C++ Compiler for Python](http://www.microsoft.com/en-us/download/details.aspx?id=44266)
 
-After install the above mentioned software, hdidx can be installed via `pip` in the *Anaconda Command Prompt*.
+After install the above mentioned software, download [`stdint.h`](http://msinttypes.googlecode.com/svn/trunk/stdint.h) and put it under the `include` folder of Visual C++, e.g. `C:\Users\xxx\AppData\Local\Programs\Common\Microsoft\Visual C++ for Python\9.0\VC\include`. Then hdidx can be installed by `pip` from the *Anaconda Command Prompt*.
 
 ## Example
 
