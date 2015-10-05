@@ -221,14 +221,14 @@ def main(args):
             raise util.HDIdxException("`nbits` must be multiple of 8")
         nsubq = nbits / 8
         v_indexer_param = [
-            # {
-            #     'indexer': indexer.SHIndexer,
-            #     'build_param': {
-            #         'nbits': nbits,
-            #     },
-            #     'index_prefix': '%s/%s_%s_nbits%d' % (
-            #         exp_dir, data.name, 'sh', nbits),
-            # },
+            {
+                'indexer': indexer.SHIndexer,
+                'build_param': {
+                    'nbits': nbits,
+                },
+                'index_prefix': '%s/%s_%s_nbits%d' % (
+                    exp_dir, data.name, 'sh', nbits),
+            },
             {
                 'indexer': indexer.MIHIndexer,
                 'build_param': {
@@ -237,28 +237,28 @@ def main(args):
                 'index_prefix': '%s/%s_%s_nbits%d' % (
                     exp_dir, data.name, 'mih', nbits),
             },
-            # {
-            #     'indexer': indexer.PQIndexer,
-            #     'build_param': {
-            #         'nsubq': nsubq,
-            #         'nsubqbits': 8,
-            #     },
-            #     'index_prefix': '%s/%s_%s_nsubq%d' % (
-            #         exp_dir, data.name, 'pq', nsubq),
-            # },
-            # {
-            #     'indexer': indexer.IVFPQIndexer,
-            #     'build_param': {
-            #         'nsubq': nsubq,
-            #         'nsubqbits': 8,
-            #         'coarsek': args.coarsek,
-            #     },
-            #     'search_param': {
-            #         'nn_coa': 10,
-            #     },
-            #     'index_prefix': '%s/%s_%s_nsubq%d_coarsek%d' % (
-            #         exp_dir, data.name, 'ivfpq', nsubq, args.coarsek),
-            # },
+            {
+                'indexer': indexer.PQIndexer,
+                'build_param': {
+                    'nsubq': nsubq,
+                    'nsubqbits': 8,
+                },
+                'index_prefix': '%s/%s_%s_nsubq%d' % (
+                    exp_dir, data.name, 'pq', nsubq),
+            },
+            {
+                'indexer': indexer.IVFPQIndexer,
+                'build_param': {
+                    'nsubq': nsubq,
+                    'nsubqbits': 8,
+                    'coarsek': args.coarsek,
+                },
+                'search_param': {
+                    'nn_coa': 10,
+                },
+                'index_prefix': '%s/%s_%s_nsubq%d_coarsek%d' % (
+                    exp_dir, data.name, 'ivfpq', nsubq, args.coarsek),
+            },
         ]
 
         for indexer_param in v_indexer_param:

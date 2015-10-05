@@ -29,28 +29,57 @@ class Bucket {
         ids_ = NULL;
       }
     }
+
     ~Bucket() {
     }
+
+    int reserve(int cap) {
+      if (cap <= cap_) {
+        return 0;
+      }
+
+      cap_ = cap;
+      IDType * tmp = ids_;
+      ids_ = new IDType[cap_];
+      if (tmp != NULL) {
+        memcpy(ids_, tmp, sizeof(ids_[0]) * next_);
+        delete [] tmp;
+      }
+
+      return 0;
+    }
+
     int append(IDType id) {
       if (next_ >= cap_) {
-        cap_ += step_;
-        IDType * tmp = ids_;
-        ids_ = new IDType[cap_];
-        if (tmp != NULL) {
-          memcpy(ids_, tmp, sizeof(ids_[0]) * next_);
-        }
+        reserve(cap_ + step_);
       }
       ids_[next_] = id;
       next_++;
       return 0;
     }
 
-    int size() {
+    const int & size() const {
       return next_;
     }
 
-    IDType get(int i) {
+    int & size() {
+      return next_;
+    }
+
+    const IDType & get(int i) const {
       return ids_[i];
+    }
+
+    IDType & get(int i) {
+      return ids_[i];
+    }
+
+    const IDType * & ids() const {
+      return ids_;
+    }
+
+    IDType * & ids() {
+      return ids_;
     }
 
   protected:
@@ -73,17 +102,17 @@ class MultiIndexer {
     int save(const char * idx_path) const;
 
   protected:
-    int nbits_;
     int code_len_;        // code length in bytes
     int sublen_;          // length of sub-code in bits
-    int ntbls_;
-    int nbkts_;
+    uint32_t nbits_;
+    uint32_t ntbls_;
+    uint32_t nbkts_;
     Bucket<uint32_t> ** tables_;
     Bucket<uint32_t> * buckets_;
 
     uint8_t * codes_;
-    size_t ncodes_;
-    size_t capacity_;
+    uint64_t ncodes_;
+    uint64_t capacity_;
     uint32_t * key_map_;
     vector<int> key_start_;
     vector<int> key_end_;

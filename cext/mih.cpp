@@ -82,7 +82,7 @@ MultiIndexer::MultiIndexer(int nbits, int ntbls, int capacity) :
   code_len_ = (nbits_ + 7) / 8;
 
   nbkts_ = 1;
-  for (int i=0; i<nbits_ / ntbls_; i++) {
+  for (uint32_t i=0; i<nbits_ / ntbls_; i++) {
     nbkts_ *= 2;
   }
   tables_ = new Bucket<uint32_t> *[ntbls_];
@@ -153,7 +153,7 @@ int MultiIndexer::add(uint8_t * codes, int num) {
    */
   for (uint32_t id=ncodes_; id<ncodes_+num; id++) {
     uint8_t * code = codes_ + id * code_len_;
-    for (int i=0; i<ntbls_; i++) {
+    for (uint32_t i=0; i<ntbls_; i++) {
       uint32_t subkey = subits(code, sublen_ * i, sublen_);
       tables_[i][subkey].append(id);
     }
@@ -164,6 +164,7 @@ int MultiIndexer::add(uint8_t * codes, int num) {
     delete [] bitmap_;
   }
   bitmap_ = new uint8_t[ncodes_];
+  return 0;
 }
 
 int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int topk) const {
@@ -174,12 +175,12 @@ int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int to
   int last_sub_dist = -1;
   memset(bitmap_, 0, ncodes_);
   // search for different distance
-  for (int d=0; d<=nbits_; d++) {
+  for (uint32_t d=0; d<=nbits_; d++) {
     int sub_dist = d / ntbls_;
     // only update v_ret when sub_dist chaged
     if (sub_dist != last_sub_dist) {
       // scan the tables
-      for (int i=0; i<ntbls_; i++) {
+      for (uint32_t i=0; i<ntbls_; i++) {
         uint32_t subcode = subits(query, sublen_ * i, sublen_);
         // scan the buckets with distance `sub_dist` in each table
         for (int t=key_start_[sub_dist]; t<key_end_[sub_dist]; t++) {
@@ -197,7 +198,7 @@ int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int to
       }
     }
 
-    for (int i=0; i<v_ret[d].size() && acc < topk; i++, acc++) {
+    for (uint32_t i=0; i<v_ret[d].size() && acc < topk; i++, acc++) {
       *ids++ = v_ret[d][i];
       *dis++ = d;
     }
@@ -210,23 +211,105 @@ int MultiIndexer::search(uint8_t * query, uint32_t * ids, uint16_t * dis, int to
 }
 
 int MultiIndexer::load(const char * idx_path) {
-  return 0;
+
   FILE * fp = fopen(idx_path, "rb");
   if (fp == NULL) {
     fprintf(stderr, "Error: cannot open file %s for writing!\n", idx_path);
     return -1;
   }
+
+  uint64_t rsrved;
+  uint32_t ntbls, nbits;
+  // skip 8 bytes reserved field
+  fread(&rsrved, sizeof(rsrved), 1, fp);
+  // load number of tables/bits/codes
+  fread(&ntbls, sizeof(ntbls), 1, fp);
+  fread(&nbits, sizeof(nbits), 1, fp);
+  fread(&ncodes_, sizeof(ncodes_), 1, fp);
+  // skip 8 bytes reserved field
+  fread(&rsrved, sizeof(rsrved), 1, fp);
+  assert(nbits_ == nbits);
+  assert(ntbls_ == ntbls);
+
+  /**
+   * load binary codes
+   */
+  if (codes_ != NULL) {
+    delete [] codes_;
+  }
+  capacity_ = ncodes_;
+  codes_ = new uint8_t[ncodes_ * code_len_];
+  int rdcnt = fread(codes_, code_len_, ncodes_, fp);
+  fprintf(stderr, "\t%d codes loaded!\n", rdcnt);
+  /**
+   * init bitmap
+   */
+  if (bitmap_ != NULL) {
+    delete [] bitmap_;
+  }
+  bitmap_ = new uint8_t[ncodes_];
+
+  /**
+   * load buckets
+   */
+  uint64_t bid;
+  int bucket_size;
+  fread(&bid, sizeof(bid), 1, fp);
+  while (bid != 0xffffffffffffffff) {
+    fread(&bucket_size, sizeof(bucket_size), 1, fp);
+    buckets_[bid].reserve(bucket_size);
+    // if (bid % 1000 == 0) 
+    //   fprintf(stderr, "bid/bcnt: %lu\t%d\n", bid, bucket_size);
+    fread(buckets_[bid].ids(), sizeof(buckets_[bid].ids()[0]),
+        bucket_size, fp);
+    buckets_[bid].size() = bucket_size;
+    fread(&bid, sizeof(bid), 1, fp);
+  }
+
   fclose(fp);
   return 0;
 }
 
 int MultiIndexer::save(const char * idx_path) const {
-  return 0;
   FILE * fp = fopen(idx_path, "wb");
   if (fp == NULL) {
     fprintf(stderr, "Error: cannot open file %s for writing!\n", idx_path);
     return -1;
   }
+
+  uint64_t rsrved = 0xffffffffffffffff;
+  // write 8 bytes reserved field
+  fwrite(&rsrved, sizeof(rsrved), 1, fp);
+  // write number of tables/bits/codes
+  fwrite(&ntbls_, sizeof(ntbls_), 1, fp);
+  fwrite(&nbits_, sizeof(nbits_), 1, fp);
+  fwrite(&ncodes_, sizeof(ncodes_), 1, fp);
+  // write 8 bytes reserved field
+  rsrved = 0;
+  fwrite(&rsrved, sizeof(rsrved), 1, fp);
+
+  /**
+   * dump binary codes
+   */
+  int wrcnt = fwrite(codes_, code_len_, ncodes_, fp);
+  fprintf(stderr, "\t%d codes saved!\n", wrcnt);
+
+  /**
+   * dump buckets
+   */
+  uint64_t bucket_num = nbkts_ * ntbls_;
+  for (uint64_t bid=0; bid<bucket_num; bid++) {
+    if (buckets_[bid].size() > 0) {
+      // if (bid % 1000 == 0) 
+      //   fprintf(stderr, "bid/bcnt: %lu\t%d\n", bid, buckets_[bid].size());
+      fwrite(&bid, sizeof(bid), 1, fp);
+      fwrite(&(buckets_[bid].size()), sizeof(buckets_[bid].size()), 1, fp);
+      fwrite(buckets_[bid].ids(), sizeof(buckets_[bid].ids()[0]), buckets_[bid].size(), fp);
+    }
+  }
+  uint64_t endid = 0xffffffffffffffff;
+  fwrite(&endid, sizeof(endid), 1, fp);
+
   fclose(fp);
   return 0;
 }
