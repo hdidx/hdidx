@@ -22,6 +22,7 @@ import operator
 from itertools import izip as zip
 
 from hdidx import _cext as cext
+from functools import reduce
 
 # use the Numpy-C-API from Cython
 cnp.import_array()
@@ -42,7 +43,7 @@ def c(n,k):
 # create the wrapper code, with numpy type annotations
 def get_key_map(nbits):
     if nbits > 32:
-        raise StandardError("Number of bits cannot exceed 32!")
+        raise Exception("Number of bits cannot exceed 32!")
     out = []
     for d in xrange(nbits+1):
         codes = np.zeros(c(nbits, d), dtype=np.uint32)

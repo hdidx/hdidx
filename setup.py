@@ -20,7 +20,7 @@ try:
     def read_md(fpath):
         return convert(fpath, 'rst')
 except ImportError:
-    print "warning: pypandoc module not found, DONOT convert Markdown to RST"
+    print("warning: pypandoc module not found, DONOT convert Markdown to RST")
 
     def read_md(fpath):
         with open(fpath, 'r') as fp:

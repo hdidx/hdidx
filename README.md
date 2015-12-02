@@ -79,6 +79,19 @@ print ids
 print dis
 ```
 
+## Citation
+
+Please cite the following paper if you use this library:
+
+```
+@article{wan2015hdidx,
+  title={HDIdx: High-Dimensional Indexing for Efficient Approximate Nearest Neighbor Search},
+  author={Wan, Ji and Tang, Sheng and Zhang, Yongdong and Li, Jintao and Wu, Pengcheng and Hoi, Steven CH},
+  journal={arXiv preprint arXiv:1510.01991},
+  year={2015}
+}
+```
+
 ## Reference
 ```
 [1] Jegou, Herve, Matthijs Douze, and Cordelia Schmid.
