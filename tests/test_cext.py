@@ -21,7 +21,7 @@ import numpy as np
 # import ipdb
 
 import hdidx._cext as cext
-from hdidx.indexer.sh import SHIndexer as sh
+from hdidx.indexer import SHIndexer as sh
 
 
 class TestCExt(unittest.TestCase):
