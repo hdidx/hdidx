@@ -30,7 +30,7 @@ import numpy
 from Cython.Distutils import build_ext
 
 setup(name='hdidx',
-      version='0.2.8',
+      version='0.2.8.1',
       # version='0.0.10052',
       author='WAN Ji',
       author_email='wanji@live.com',

@@ -80,7 +80,7 @@ def pq_kmeans_assign(centroids, query):
 
 
 def pq_knn(dist, topk):
-    ids = bottleneck.argpartsort(dist, topk)[:topk]
+    ids = bottleneck.argpartition(dist, topk - 1)[:topk]
     ids = ids[dist[ids].argsort()]
     return ids
 
