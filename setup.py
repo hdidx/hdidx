@@ -75,7 +75,6 @@ setup(name='hdidx',
       install_requires=[
           "numpy      >= 1.6.0",
           "scipy      >= 0.9.0",
-          "bottleneck >= 0.8.0",
           "lmdb       >= 0.83",
       ],
       )

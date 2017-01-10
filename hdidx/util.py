@@ -17,7 +17,6 @@ import os
 import logging
 # distance
 from distance import distFunc
-import bottleneck
 from scipy.io import loadmat
 import numpy as np
 
@@ -80,7 +79,7 @@ def pq_kmeans_assign(centroids, query):
 
 
 def pq_knn(dist, topk):
-    ids = bottleneck.argpartition(dist, topk - 1)[:topk]
+    ids = np.argpartition(dist, topk - 1)[:topk]
     ids = ids[dist[ids].argsort()]
     return ids
 
