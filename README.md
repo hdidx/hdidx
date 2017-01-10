@@ -29,6 +29,7 @@ When a query vector comes, it will be mapped to hash codes by the same `Encoder`
 **HDIdx** can be installed by `pip`:
 
 ```bash
+[sudo] pip install cython
 [sudo] pip install hdidx
 ```
 

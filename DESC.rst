@@ -62,6 +62,7 @@ Installation
 
 .. code:: bash
 
+    [sudo] pip install cython
     [sudo] pip install hdidx
 
 By default, **HDIdx** use kmeans algorithm provided by
