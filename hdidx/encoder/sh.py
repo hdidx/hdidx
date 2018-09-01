@@ -51,7 +51,7 @@ class SHEncoder(Encoder):
         # 3) enumerate eigenfunctions
         R = mx - mn
         maxMode = (np.ceil((nbits+1) * R / R.max())).astype(int)
-        nModes = int(maxMode.sum() - maxMode.size + 1)
+        nModes = maxMode.sum() - maxMode.size + 1
         modes = np.ones((nModes, npca))
         m = 0
         for i in xrange(npca):
